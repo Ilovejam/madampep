@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, View, Text, ImageBackground, FlatList, Image } from 'react-native';
+import { StyleSheet, View, Text, ImageBackground, FlatList, Image, SafeAreaView } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useLayoutEffect } from 'react'; // useLayoutEffect'i import edin
 import CustomHeader from '../components/CustomHeader';
@@ -53,28 +53,35 @@ export default function MelekKartları() {
   );
 
   return (
-    <ImageBackground source={require('../assets/images/background.png')} style={styles.background}>
-       <CustomHeader />
-      <FlatList
-        data={messages}
-        renderItem={renderMessage}
-        keyExtractor={item => item.id.toString()}
-        style={styles.messageList}
-        contentContainerStyle={styles.messageListContent}
-      />
-      <View style={styles.sandTimerContainer}>
-        <LottieView
-          source={require('../assets/kumsaati.json')}
-          autoPlay
-          loop
-          style={styles.sandTimer}
+    <SafeAreaView style={styles.safeArea}>
+
+      <ImageBackground source={require('../assets/images/background.png')} style={styles.background}>
+        <CustomHeader />
+        <FlatList
+          data={messages}
+          renderItem={renderMessage}
+          keyExtractor={item => item.id.toString()}
+          style={styles.messageList}
+          contentContainerStyle={styles.messageListContent}
         />
-      </View>
-    </ImageBackground>
+        <View style={styles.sandTimerContainer}>
+          <LottieView
+            source={require('../assets/kumsaati.json')}
+            autoPlay
+            loop
+            style={styles.sandTimer}
+          />
+        </View>
+      </ImageBackground>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: 'black', // Ekranınızın arka plan rengi
+  },
   background: {
     flex: 1,
     resizeMode: 'cover',

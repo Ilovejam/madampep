@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Image, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Image, Alert, SafeAreaView } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { Ionicons } from '@expo/vector-icons';
 import CustomHeader from '@/components/CustomHeader';
@@ -27,33 +27,39 @@ export default function UploadImage({ onSubmit, onClose }) {
   };
 
   return (
-    <View style={styles.container}>
-        <CustomHeader></CustomHeader>
-      <Text style={styles.closeText} onPress={onClose}>Kapat</Text>
-      <Text style={styles.title}>Fincan Fotoğraflarını Yükle</Text>
-      <View style={styles.photosContainer}>
-        {Array.from({ length: 3 }).map((_, index) => (
-          <View key={index} style={[styles.photoWrapper, photos[index] && styles.photoSelected]}>
-            {photos[index] ? (
-              <Image source={{ uri: photos[index].uri }} style={styles.photo} />
-            ) : (
-              <Ionicons name="camera-outline" size={40} color="#fff" />
-            )}
-          </View>
-        ))}
+    <SafeAreaView style={styles.safeArea}>
+      <View style={styles.container}>
+          <CustomHeader></CustomHeader>
+        <Text style={styles.closeText} onPress={onClose}>Kapat</Text>
+        <Text style={styles.title}>Fincan Fotoğraflarını Yükle</Text>
+        <View style={styles.photosContainer}>
+          {Array.from({ length: 3 }).map((_, index) => (
+            <View key={index} style={[styles.photoWrapper, photos[index] && styles.photoSelected]}>
+              {photos[index] ? (
+                <Image source={{ uri: photos[index].uri }} style={styles.photo} />
+              ) : (
+                <Ionicons name="camera-outline" size={40} color="#fff" />
+              )}
+            </View>
+          ))}
+        </View>
+        <Text style={styles.subtitle}>En az bir fotoğraf yüklemelisin.</Text>
+        <TouchableOpacity style={styles.controlButton} onPress={pickImage}>
+          <Ionicons name="image-outline" size={40} color="#fff" />
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
+          <Text style={styles.submitButtonText}>Devam Et</Text>
+        </TouchableOpacity>
       </View>
-      <Text style={styles.subtitle}>En az bir fotoğraf yüklemelisin.</Text>
-      <TouchableOpacity style={styles.controlButton} onPress={pickImage}>
-        <Ionicons name="image-outline" size={40} color="#fff" />
-      </TouchableOpacity>
-      <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
-        <Text style={styles.submitButtonText}>Devam Et</Text>
-      </TouchableOpacity>
-    </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: 'black', // Ekranınızın arka plan rengi
+  },
   container: {
     flex: 1,
     backgroundColor: '#000',

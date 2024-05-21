@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { StyleSheet, View, Text, Animated, ImageBackground, TouchableOpacity, Alert, Image, Modal, Dimensions } from 'react-native';
+import { StyleSheet, View, Text, Animated, ImageBackground, TouchableOpacity, Alert, Image, Modal, Dimensions, SafeAreaView } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useNavigation } from '@react-navigation/native';
 import { useLayoutEffect } from 'react';
@@ -74,48 +74,54 @@ export default function Falla() {
   };
 
   return (
-    <ImageBackground source={require('../assets/images/background.png')} style={styles.background}>
-      <CustomHeader />
+    <SafeAreaView style={styles.safeArea}>
+      <ImageBackground source={require('../assets/images/background.png')} style={styles.background}>
+        <CustomHeader />
 
-      <View style={styles.sandTimerContainer}>
-        <LottieView
-          source={require('../assets/kumsaati.json')}
-          autoPlay
-          loop
-          style={styles.sandTimer}
-        />
-        <Text style={styles.timerText}>{formatTime(timer)}</Text>
-        <View style={styles.speedUpContainer}>
-          <View style={styles.speedUpButtons}>
-            <TouchableOpacity style={styles.speedUpButton} onPress={handleSpeedUpPress}>
-              <Image source={require('../assets/images/videola.png')} style={styles.buttonImage} />
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.speedUpButton} onPress={handleLokumlaPress}>
-              <Image source={require('../assets/images/lokumla.png')} style={styles.buttonImage} />
-            </TouchableOpacity>
+        <View style={styles.sandTimerContainer}>
+          <LottieView
+            source={require('../assets/kumsaati.json')}
+            autoPlay
+            loop
+            style={styles.sandTimer}
+          />
+          <Text style={styles.timerText}>{formatTime(timer)}</Text>
+          <View style={styles.speedUpContainer}>
+            <View style={styles.speedUpButtons}>
+              <TouchableOpacity style={styles.speedUpButton} onPress={handleSpeedUpPress}>
+                <Image source={require('../assets/images/videola.png')} style={styles.buttonImage} />
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.speedUpButton} onPress={handleLokumlaPress}>
+                <Image source={require('../assets/images/lokumla.png')} style={styles.buttonImage} />
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
-      </View>
 
-      <Modal
-        animationType="fade"
-        transparent={true}
-        visible={modalVisible}
-        onRequestClose={() => {
-          setModalVisible(!modalVisible);
-        }}
-      >
-        <TouchableOpacity style={styles.modalOverlay} onPress={handleModalPress}>
-          <BlurView intensity={50} style={styles.blurView}>
-            <Image source={require('../assets/images/paywall.png')} style={styles.paywallImage} />
-          </BlurView>
-        </TouchableOpacity>
-      </Modal>
-    </ImageBackground>
+        <Modal
+          animationType="fade"
+          transparent={true}
+          visible={modalVisible}
+          onRequestClose={() => {
+            setModalVisible(!modalVisible);
+          }}
+        >
+          <TouchableOpacity style={styles.modalOverlay} onPress={handleModalPress}>
+            <BlurView intensity={50} style={styles.blurView}>
+              <Image source={require('../assets/images/paywall.png')} style={styles.paywallImage} />
+            </BlurView>
+          </TouchableOpacity>
+        </Modal>
+      </ImageBackground>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: 'black', // Ekranınızın arka plan rengi
+  },
   background: {
     flex: 1,
     resizeMode: 'cover',

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useLayoutEffect } from 'react';
-import { StyleSheet, View, Text, ImageBackground, FlatList, TextInput, TouchableOpacity, Keyboard } from 'react-native';
+import { StyleSheet, View, Text, ImageBackground, FlatList, TextInput, TouchableOpacity, Keyboard, SafeAreaView, KeyboardAvoidingView, Platform } from 'react-native';
 import LottieView from 'lottie-react-native';
 import { useNavigation } from '@react-navigation/native';
 import CustomHeader from '@/components/CustomHeader';
@@ -8,6 +8,7 @@ import axios from 'axios';
 export default function Fal() {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
+  const [keyboardVisible, setKeyboardVisible] = useState(false);
   const flatListRef = useRef(null);
   const navigation = useNavigation();
 
@@ -35,6 +36,20 @@ export default function Fal() {
     }
   }, [messages]);
 
+  useEffect(() => {
+    const keyboardDidShowListener = Keyboard.addListener('keyboardDidShow', () => {
+      setKeyboardVisible(true);
+    });
+    const keyboardDidHideListener = Keyboard.addListener('keyboardDidHide', () => {
+      setKeyboardVisible(false);
+    });
+
+    return () => {
+      keyboardDidHideListener.remove();
+      keyboardDidShowListener.remove();
+    };
+  }, []);
+
   const sendMessage = async (text) => {
     if (text.trim()) {
       setMessages(prevMessages => [...prevMessages, { id: (prevMessages.length + 1).toString(), text, sender: 'user' }]);
@@ -61,34 +76,45 @@ export default function Fal() {
   );
 
   return (
-    <ImageBackground source={require('../assets/images/background.png')} style={styles.background}>
-      <CustomHeader />
-      <FlatList
-        ref={flatListRef}
-        data={messages}
-        renderItem={renderMessage}
-        keyExtractor={item => item.id}
-        style={styles.messageList}
-        contentContainerStyle={styles.messageListContent}
-      />
-      <View style={styles.inputContainer}>
-        <TextInput
-          style={styles.input}
-          placeholder="Mesajınızı yazın..."
-          placeholderTextColor="#888"
-          value={input}
-          onChangeText={setInput}
-          onSubmitEditing={() => sendMessage(input)}
-        />
-        <TouchableOpacity style={styles.sendButton} onPress={() => sendMessage(input)}>
-          <Text style={styles.sendButtonText}>Gönder</Text>
-        </TouchableOpacity>
-      </View>
-    </ImageBackground>
+    <KeyboardAvoidingView
+      style={{ flex: 1 }}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+    >
+      <SafeAreaView style={styles.safeArea}>
+        <ImageBackground source={require('../assets/images/background.png')} style={styles.background}>
+          <CustomHeader />
+          <FlatList
+            ref={flatListRef}
+            data={messages}
+            renderItem={renderMessage}
+            keyExtractor={item => item.id}
+            style={styles.messageList}
+            contentContainerStyle={styles.messageListContent}
+          />
+          <View style={styles.inputContainer}>
+            <TextInput
+              style={styles.input}
+              placeholder="Mesajınızı yazın..."
+              placeholderTextColor="#888"
+              value={input}
+              onChangeText={setInput}
+              onSubmitEditing={() => sendMessage(input)}
+            />
+            <TouchableOpacity style={styles.sendButton} onPress={() => sendMessage(input)}>
+              <Text style={styles.sendButtonText}>Gönder</Text>
+            </TouchableOpacity>
+          </View>
+        </ImageBackground>
+      </SafeAreaView>
+    </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: 'black', // Ekranınızın arka plan rengi
+  },
   background: {
     flex: 1,
     resizeMode: 'cover',
@@ -127,6 +153,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#2e2e2e',
     padding: 10,
+    borderRadius: 20,
+    margin: 10,
   },
   input: {
     flex: 1,
@@ -147,3 +175,4 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
 });
+

@@ -1,14 +1,37 @@
-// CustomHeader.js
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, Image, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 
-export default function CustomHeader() {
+export default function CustomHeader({ zodiacSign }) {
   const navigation = useNavigation();
+  const [currentZodiac, setCurrentZodiac] = useState('Avatar');
 
   const handleBackPress = () => {
     navigation.navigate('Dashboard');
+  };
+
+  useEffect(() => {
+    console.log('Received Zodiac Sign Prop:', zodiacSign); // Debugging
+    if (zodiacSign) {
+      setCurrentZodiac(zodiacSign);
+    }
+  }, [zodiacSign]);
+
+  const zodiacImages = {
+    capricorn: require('../assets/burçlar/capricorn.png'),
+    aquarius: require('../assets/burçlar/aquarius.png'),
+    pisces: require('../assets/burçlar/pisces.png'),
+    aries: require('../assets/burçlar/aries.png'),
+    taurus: require('../assets/burçlar/taurus.png'),
+    gemini: require('../assets/burçlar/gemini.png'),
+    cancer: require('../assets/burçlar/cancer.png'),
+    leo: require('../assets/burçlar/leo.png'),
+    virgo: require('../assets/burçlar/virgo.png'),
+    libra: require('../assets/burçlar/libra.png'),
+    scorpio: require('../assets/burçlar/scorpio.png'),
+    sagittarius: require('../assets/burçlar/sagittarius.png'),
+    Avatar: require('../assets/images/Avatar.png'),  // Varsayılan resim
   };
 
   return (
@@ -23,8 +46,8 @@ export default function CustomHeader() {
           <Text style={styles.headerSubtitle}>online</Text>
         </View>
       </View>
-      <Image source={require('../assets/images/frame.png')} style={[styles.profileImage, styles.marginRight]} />
-      <Image source={require('../assets/images/Avatar.png')} style={styles.profileImage} />
+      <Image source={require('../assets/images/frame.png')} style={[styles.profileImageLokum, styles.marginRight]} />
+      <Image source={zodiacImages[currentZodiac]} style={styles.profileImage} />
     </View>
   );
 }
@@ -62,7 +85,11 @@ const styles = StyleSheet.create({
     height: 30,
     borderRadius: 15,
   },
+  profileImageLokum: {
+    width: 50,
+    height: 35,
+  },
   marginRight: {
-    marginRight: 10, // İki resim arasına boşluk bırakın
+    marginRight: 5,
   },
 });

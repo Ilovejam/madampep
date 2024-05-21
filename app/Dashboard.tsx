@@ -1,5 +1,5 @@
 import React from 'react';
-import { StyleSheet, View, Text, ImageBackground, ScrollView, TouchableOpacity } from 'react-native';
+import { StyleSheet, View, Text, ImageBackground, ScrollView, TouchableOpacity, SafeAreaView } from 'react-native';
 import LottieView from 'lottie-react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useLayoutEffect } from 'react'; // useLayoutEffect'i import edin
@@ -18,39 +18,45 @@ export default function Dashboard() {
   };
 
   return (
-    <ImageBackground source={require('../assets/images/background.png')} style={styles.background}>
-        <CustomHeader></CustomHeader>
-      <ScrollView contentContainerStyle={styles.container}>
-        <LottieView
-          source={require('../assets/eye.json')}
-          autoPlay
-          loop
-          style={styles.eyeAnimation}
-        />
-        <TouchableOpacity style={styles.card} onPress={() => handleCardPress('ChatScreen')}>
-          <Text style={styles.cardTitle}>Kahve Falı</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.cardInactive} onPress={() => handleCardPress('Tarot')}>
-          <Text style={styles.cardTitleInactive}>Tarot Falı</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.cardInactive} onPress={() => handleCardPress('RüyaTabiri')}>
-          <Text style={styles.cardTitleInactive}>Rüya Tabiri</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.cardInactive} onPress={() => handleCardPress('MelekKartları')}>
-          <Text style={styles.cardTitleInactive}>Melek Kartları</Text>
-        </TouchableOpacity>
-        {/* <TouchableOpacity style={styles.cardInactive} onPress={() => handleCardPress('YıldızHaritası')}>
-          <Text style={styles.cardTitleInactive}>Yıldız Haritası</Text>
-        </TouchableOpacity> */}
-        <TouchableOpacity style={styles.cardInactive} onPress={() => handleCardPress('BurçYorumları')}>
-          <Text style={styles.cardTitleInactive}>Burç Yorumları</Text>
-        </TouchableOpacity>
-      </ScrollView>
-    </ImageBackground>
+    <SafeAreaView style={styles.safeArea} >
+      <ImageBackground source={require('../assets/images/background.png')} style={styles.background}>
+          <CustomHeader></CustomHeader>
+        <ScrollView contentContainerStyle={styles.container}>
+          <LottieView
+            source={require('../assets/eye.json')}
+            autoPlay
+            loop
+            style={styles.eyeAnimation}
+          />
+          <TouchableOpacity style={styles.card} onPress={() => handleCardPress('ChatScreen')}>
+            <Text style={styles.cardTitle}>Kahve Falı</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.cardInactive} onPress={() => handleCardPress('Tarot')}>
+            <Text style={styles.cardTitleInactive}>Tarot Falı</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.cardInactive} onPress={() => handleCardPress('RüyaTabiri')}>
+            <Text style={styles.cardTitleInactive}>Rüya Tabiri</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.cardInactive} onPress={() => handleCardPress('MelekKartları')}>
+            <Text style={styles.cardTitleInactive}>Melek Kartları</Text>
+          </TouchableOpacity>
+          {/* <TouchableOpacity style={styles.cardInactive} onPress={() => handleCardPress('YıldızHaritası')}>
+            <Text style={styles.cardTitleInactive}>Yıldız Haritası</Text>
+          </TouchableOpacity> */}
+          <TouchableOpacity style={styles.cardInactive} onPress={() => handleCardPress('BurçYorumları')}>
+            <Text style={styles.cardTitleInactive}>Burç Yorumları</Text>
+          </TouchableOpacity>
+        </ScrollView>
+      </ImageBackground>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: 'black', // Ekranınızın arka plan rengi
+  },
   background: {
     flex: 1,
     resizeMode: 'cover',
