@@ -19,18 +19,18 @@ export default function CustomHeader({ zodiacSign }) {
   }, [zodiacSign]);
 
   const zodiacImages = {
-    capricorn: require('../assets/burçlar/capricorn.png'),
-    aquarius: require('../assets/burçlar/aquarius.png'),
-    pisces: require('../assets/burçlar/pisces.png'),
-    aries: require('../assets/burçlar/aries.png'),
-    taurus: require('../assets/burçlar/taurus.png'),
-    gemini: require('../assets/burçlar/gemini.png'),
-    cancer: require('../assets/burçlar/cancer.png'),
-    leo: require('../assets/burçlar/leo.png'),
-    virgo: require('../assets/burçlar/virgo.png'),
-    libra: require('../assets/burçlar/libra.png'),
-    scorpio: require('../assets/burçlar/scorpio.png'),
-    sagittarius: require('../assets/burçlar/sagittarius.png'),
+    capricorn: require('../assets/images/zodiac/capricorn.png'),
+    aquarius: require('../assets/images/zodiac/aquarius.png'),
+    pisces: require('../assets/images/zodiac/pisces.png'),
+    aries: require('../assets/images/zodiac/aries.png'),
+    taurus: require('../assets/images/zodiac/taurus.png'),
+    gemini: require('../assets/images/zodiac/gemini.png'),
+    cancer: require('../assets/images/zodiac/cancer.png'),
+    leo: require('../assets/images/zodiac/leo.png'),
+    virgo: require('../assets/images/zodiac/virgo.png'),
+    libra: require('../assets/images/zodiac/libra.png'),
+    scorpio: require('../assets/images/zodiac/scorpio.png'),
+    sagittarius: require('../assets/images/zodiac/sagittarius.png'),
     Avatar: require('../assets/images/Avatar.png'),  // Varsayılan resim
   };
 

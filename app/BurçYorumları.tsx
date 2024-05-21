@@ -4,7 +4,7 @@ import { useNavigation } from '@react-navigation/native';
 import CustomHeader from '@/components/CustomHeader';
 import LottieView from 'lottie-react-native';
 
-export default function Tarot() {
+export default function BurçYorumları() {
   const allMessages = [
     { id: '1', text: 'Burç Yorumu...' },
     { id: '2', text: 'Birileri Biraz Meraklı....' },

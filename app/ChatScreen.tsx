@@ -339,9 +339,7 @@ const styles = StyleSheet.create({
     marginHorizontal: 10,
     marginBottom: 10,
   },
-  inputContainerShift: {
-    marginBottom: 50,
-  },
+ 
   input: {
     flex: 1,
     padding: 10,
