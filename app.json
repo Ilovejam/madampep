@@ -15,7 +15,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.madampep.ios",
-      "buildNumber": "3"  
+      "buildNumber": "2"  
     },
     "android": {
       "adaptiveIcon": {
