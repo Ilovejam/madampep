@@ -41,7 +41,7 @@ export default function SplashScreen({ onAnimationEnd }) {
         <View style={styles.animationContainer}>
           <LottieView
             ref={animationRef}
-            source={require('../assets/mandala.json')}
+            source={require('../assets/Mandala2.json')}
             autoPlay
             loop
             style={styles.mandalaAnimation}
@@ -98,13 +98,13 @@ const styles = StyleSheet.create({
     color: '#FBEFD1',
     fontSize: 30,
     textAlign: 'center',
-    fontFamily: 'DavidLibre-Regular',
+    fontFamily: 'DavidLibre',
   },
   text: {
     color: '#FBEFD1',
     fontSize: 20,
     textAlign: 'center',
-    fontFamily: 'DavidLibre-Regular',
+    fontFamily: 'DavidLibre',
     marginTop: 10,
   },
 });

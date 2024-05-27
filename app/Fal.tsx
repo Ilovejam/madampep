@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef, useLayoutEffect } from 'react';
 import { StyleSheet, View, Text, ImageBackground, FlatList, TextInput, TouchableOpacity, Keyboard, SafeAreaView, KeyboardAvoidingView, Platform } from 'react-native';
-import LottieView from 'lottie-react-native';
 import { useNavigation } from '@react-navigation/native';
 import CustomHeader from '@/components/CustomHeader';
 import axios from 'axios';
@@ -23,12 +22,21 @@ export default function Fal() {
     axios.get('https://madampep-backend.vercel.app/api/ai-response')
       .then(response => {
         const aiMessage = response.data.message;
-        setMessages(prevMessages => [...prevMessages, { id: (prevMessages.length + 1).toString(), text: aiMessage, sender: 'bot' }]);
+        const messageParagraphs = aiMessage.split('\n').filter(paragraph => paragraph.trim() !== '');
+  
+        const formattedMessages = messageParagraphs.map((paragraph, index) => ({
+          id: (messages.length + index + 1).toString(),
+          text: paragraph,
+          sender: 'bot'
+        }));
+  
+        setMessages(prevMessages => [...prevMessages, ...formattedMessages]);
       })
       .catch(error => {
         console.error('Error fetching AI response:', error);
       });
   }, []);
+  
 
   useEffect(() => {
     if (flatListRef.current) {
@@ -54,26 +62,36 @@ export default function Fal() {
     if (text.trim()) {
       setMessages(prevMessages => [...prevMessages, { id: (prevMessages.length + 1).toString(), text, sender: 'user' }]);
       setInput('');
-
+  
       try {
-        const response = await axios.post('https://madampep-backend.vercel.app/api/message', {
+        const response = await axios.post('https://madampep-backend.vercel.app/api/short-message', {
           inputs: [
             { question: 'Kullanıcı Mesajı', answer: text }
           ]
         });
         const aiMessage = response.data.message;
-        setMessages(prevMessages => [...prevMessages, { id: (prevMessages.length + 2).toString(), text: aiMessage, sender: 'bot' }]);
+        const messageParagraphs = aiMessage.split('\n').filter(paragraph => paragraph.trim() !== '');
+  
+        const formattedMessages = messageParagraphs.map((paragraph, index) => ({
+          id: (messages.length + index + 2).toString(),
+          text: paragraph,
+          sender: 'bot'
+        }));
+  
+        setMessages(prevMessages => [...prevMessages, ...formattedMessages]);
       } catch (error) {
         console.error('Error sending data:', error);
       }
     }
   };
+  
 
   const renderMessage = ({ item }) => (
     <View style={[styles.messageBubble, item.sender === 'user' ? styles.userMessage : styles.botMessage]}>
       <Text style={styles.messageText}>{item.text}</Text>
     </View>
   );
+  
 
   return (
     <KeyboardAvoidingView
@@ -113,7 +131,7 @@ export default function Fal() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: 'black', // Ekranınızın arka plan rengi
+    backgroundColor: 'black',
   },
   background: {
     flex: 1,
@@ -137,7 +155,7 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-end',
   },
   botMessage: {
-    backgroundColor: 'rgba(255, 255, 255, 0.05)', // %5 opacity ile beyaz renk
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
     alignSelf: 'flex-start',
     padding: 10,
     borderRadius: 10,
@@ -147,6 +165,7 @@ const styles = StyleSheet.create({
   messageText: {
     color: '#CDC3AB',
     fontSize: 16,
+    fontFamily: 'DavidLibre'
   },
   inputContainer: {
     flexDirection: 'row',
@@ -173,6 +192,6 @@ const styles = StyleSheet.create({
   sendButtonText: {
     color: 'white',
     fontSize: 16,
+    fontFamily: 'DavidLibre'
   },
 });
-

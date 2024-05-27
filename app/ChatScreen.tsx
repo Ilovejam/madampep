@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useLayoutEffect, useRef } from 'react';
-import { StyleSheet, View, ImageBackground, Text, TextInput, TouchableOpacity, FlatList, Keyboard, Animated, SafeAreaView, KeyboardAvoidingView, Platform } from 'react-native';
+import { StyleSheet, View, ImageBackground, Text, TextInput, TouchableOpacity, FlatList, Keyboard, SafeAreaView, KeyboardAvoidingView, Platform } from 'react-native';
+import LottieView from 'lottie-react-native';
 import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useNavigation } from '@react-navigation/native';
@@ -37,16 +38,12 @@ function getZodiacSign(day, month) {
   return 'Bilinmiyor';
 }
 
-
 export default function ChatScreen() {
   const [step, setStep] = useState(1);
   const [name, setName] = useState('');
   const [gender, setGender] = useState('');
   const [zodiacSign, setZodiacSign] = useState('Avatar');
-  const [messages, setMessages] = useState([
-    { id: 1, text: "Vaay... Güzel fincan! Ama önce seni biraz tanımam gerek...", sender: "bot" },
-    { id: 2, text: "Adını alabilir miyim? Geleceğini görmem için bana o harfler lazım...", sender: "bot" }
-  ]);
+  const [messages, setMessages] = useState([{ id: 'loading-0', text: '...', sender: 'bot' }]);
   const [input, setInput] = useState('');
   const [keyboardVisible, setKeyboardVisible] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState(false);
@@ -55,6 +52,7 @@ export default function ChatScreen() {
   const [userInputs, setUserInputs] = useState([]);
   const flatListRef = useRef(null);
   const navigation = useNavigation();
+  const [isBotTyping, setIsBotTyping] = useState(true);
 
   useEffect(() => {
     const keyboardDidShowListener = Keyboard.addListener('keyboardDidShow', () => {
@@ -77,6 +75,34 @@ export default function ChatScreen() {
   }, [navigation]);
 
   useEffect(() => {
+    let timeout;
+    const initialMessages = [
+      { id: 1, text: "Vaay... Güzel fincan! Ama önce seni biraz tanımam gerek...", sender: "bot" },
+      { id: 2, text: "Adını alabilir miyim? Geleceğini görmem için bana o harfler lazım...", sender: "bot" }
+    ];
+
+    const addMessages = (index) => {
+      if (index < initialMessages.length) {
+        timeout = setTimeout(() => {
+          setMessages((prevMessages) => [
+            ...prevMessages.slice(0, prevMessages.length - 1),
+            initialMessages[index],
+            { id: `loading-${index + 1}`, text: '...', sender: 'bot' },
+          ]);
+          addMessages(index + 1);
+        }, 2000);
+      } else {
+        setMessages((prevMessages) => prevMessages.slice(0, prevMessages.length - 1));
+        setIsBotTyping(false); // Set typing to false after initial messages
+      }
+    };
+
+    addMessages(0);
+
+    return () => clearTimeout(timeout);
+  }, []);
+
+  useEffect(() => {
     if (flatListRef.current) {
       flatListRef.current.scrollToEnd({ animated: true });
     }
@@ -84,19 +110,37 @@ export default function ChatScreen() {
 
   const sendMessage = (text, sender = "user") => {
     if (text.trim()) {
-      setMessages(prevMessages => [...prevMessages, { id: prevMessages.length + 1, text, sender }]);
+      setMessages(prevMessages => [
+        ...prevMessages,
+        { id: prevMessages.length + 1, text, sender }
+      ]);
       setInput('');
     }
   };
 
   const sendDelayedMessages = (messages, callback) => {
+    setIsBotTyping(true); // Set bot typing to true before sending messages
+
+    setMessages(prevMessages => [
+      ...prevMessages,
+      { id: `loading-${prevMessages.length}`, text: '...', sender: 'bot' }
+    ]);
+
     messages.forEach((message, index) => {
       setTimeout(() => {
-        sendMessage(message.text, message.sender);
-        if (index === messages.length - 1 && callback) {
-          setTimeout(callback, 1000);
+        setMessages(prevMessages => [
+          ...prevMessages.slice(0, prevMessages.length - 1),
+          { id: prevMessages.length + 1, text: message.text, sender: message.sender },
+          { id: `loading-${index + 1}`, text: '...', sender: 'bot' }
+        ]);
+        if (index === messages.length - 1) {
+          setTimeout(() => {
+            setMessages(prevMessages => prevMessages.slice(0, prevMessages.length - 1));
+            setIsBotTyping(false); // Set bot typing to false after sending all messages
+            if (callback) setTimeout(callback, 1000);
+          }, 2000);
         }
-      }, 1000 * (index + 1));
+      }, 2000 * (index + 1));
     });
   };
 
@@ -152,24 +196,28 @@ export default function ChatScreen() {
     const formattedDate = date.toLocaleDateString('tr-TR'); // Türkçe formatında tarih
     sendMessage(`Doğum tarihi: ${formattedDate}`, "user");
     setUserInputs(prevInputs => [...prevInputs, { question: "Doğum Tarihi", answer: formattedDate }]);
-    
-    // Tarih formatına göre ayrıştırma işlemi, gün ve ayın doğru şekilde alındığından emin olun
-    const [day, month, year] = formattedDate.split('.').map(Number);
-    console.log('Parsed Date:', { day, month, year }); // Debugging
-
+  
+    const [day, month] = formattedDate.split('.').map(Number);
     const zodiac = getZodiacSign(day, month);
-    console.log('Calculated Zodiac:', zodiac); // Debugging
-    console.log('Zodiac Image Key:', zodiacSigns[zodiac]); // Debugging
-    
-    // setZodiacSign'i kullanarak güncelle
-    setZodiacSign(zodiacSigns[zodiac] || 'Avatar'); // Eğer bilinmeyen bir burçsa Avatar olarak ayarla
-    setShowJobOptions(true);
-    sendDelayedMessages([{ text: "Ne iş yapıyorsun?", sender: "bot" }]);
-};
-
-
-
-
+    setZodiacSign(zodiacSigns[zodiac] || 'Avatar');
+  
+    let genderSpecificMessage;
+    if (gender === "Kadın") {
+      genderSpecificMessage = { text: `${zodiac} Burcu Kadını...`, sender: "bot" };
+    } else if (gender === "Erkek") {
+      genderSpecificMessage = { text: `${zodiac} Burcu Erkeği...`, sender: "bot" };
+    } else {
+      genderSpecificMessage = { text: `${zodiac} Burcu...`, sender: "bot" }; // Cinsiyet belirtilmemişse genel mesaj
+    }
+  
+    const zodiacMessages = [
+      genderSpecificMessage,
+      { text: "Ne iş yapıyorsun?", sender: "bot" }
+    ];
+  
+    sendDelayedMessages(zodiacMessages, () => setShowJobOptions(true));
+  };
+  
   const handleJobOptionSubmit = (option) => {
     sendMessage(option, "user");
     setUserInputs(prevInputs => [...prevInputs, { question: "Meslek", answer: option }]);
@@ -178,19 +226,22 @@ export default function ChatScreen() {
       { text: "Hazırız sanırım.", sender: "bot" },
       { text: "Bana biraz zaman ver. Fincanına odaklanmam lazım...", sender: "bot" }
     ], async () => {
-      console.log(userInputs);
       try {
         const response = await axios.post('https://madampep-backend.vercel.app/api/message', {
           inputs: userInputs
         });
-        console.log(response.data);
+        console.log('Response:', response.data);  // Burada response verisini konsola yazdırıyoruz
+        // response.data'yı Falla ekranına geçirin
+        navigation.replace('Falla', { response: response.data });
       } catch (error) {
         console.error('Error sending data:', error);
       }
-      navigation.replace('Falla');
     });
   };
-
+  
+  
+  
+  
   return (
     <KeyboardAvoidingView
       style={{ flex: 1 }}
@@ -198,7 +249,7 @@ export default function ChatScreen() {
     >
       <SafeAreaView style={styles.safeArea}>
         <ImageBackground source={require('../assets/images/background.png')} style={styles.background}>
-          <CustomHeader zodiacSign={zodiacSign} />
+        <CustomHeader zodiacSign={zodiacSign} isBotTyping={isBotTyping} />
           <FlatList
             ref={flatListRef}
             data={messages}
@@ -209,6 +260,7 @@ export default function ChatScreen() {
             onContentSizeChange={() => flatListRef.current.scrollToEnd({ animated: true })}
             onLayout={() => flatListRef.current.scrollToEnd({ animated: true })}
           />
+          {isBotTyping && <Text style={styles.typingIndicator}></Text>}
           <View style={styles.fixedContainer}>
             {step === 1 ? (
               <View style={[styles.inputContainer, keyboardVisible && styles.inputContainerShift]}>
@@ -220,41 +272,42 @@ export default function ChatScreen() {
                   onChangeText={setName}
                   onSubmitEditing={handleNameSubmit}
                 />
-               <TouchableOpacity style={styles.sendButton} onPress={handleNameSubmit} disabled={!name.trim()}>
-                <Ionicons name="send" size={24} color={!name.trim() ? '#888' : '#FBEFD1'} />
-              </TouchableOpacity>
+                <TouchableOpacity style={styles.sendButton} onPress={handleNameSubmit} disabled={!name.trim()}>
+                  <Ionicons name="send" size={24} color={!name.trim() ? '#888' : '#FBEFD1'} />
+                </TouchableOpacity>
               </View>
-            ) : step === 2 ? (
+            ) : step === 2 && !isBotTyping ? (
               <View style={styles.genderContainer}>
-                <Animated.View style={styles.genderRow}>
-                  <TouchableOpacity style={styles.genderButton} onPress={() => handleGenderSubmit("Kadın")}>
-                    <Text style={styles.buttonText}>Kadın</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity style={styles.genderButton} onPress={() => handleGenderSubmit("Erkek")}>
-                    <Text style={styles.buttonText}>Erkek</Text>
-                  </TouchableOpacity>
-                </Animated.View>
-                <TouchableOpacity style={[styles.genderButton, styles.fullWidthButton]} onPress={() => handleGenderSubmit("Bunların dışında bir tanım")}>
+                <TouchableOpacity style={styles.genderButton} onPress={() => handleGenderSubmit("Kadın")}>
+                  <Text style={styles.buttonText}>Kadın</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.genderButton} onPress={() => handleGenderSubmit("Erkek")}>
+                  <Text style={styles.buttonText}>Erkek</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.genderButton} onPress={() => handleGenderSubmit("Bunların dışında bir tanım")}>
                   <Text style={styles.buttonText}>Bunların dışında bir tanım</Text>
                 </TouchableOpacity>
               </View>
             ) : null}
             {showDatePicker && (
               <>
-                <DateTimePicker
-                  testID="dateTimePicker"
-                  value={date}
-                  mode="date"
-                  display="spinner"
-                  onChange={handleDateChange}
-                  style={styles.datePicker}
-                />
+                <View style={styles.datePickerContainer}>
+                  <DateTimePicker
+                    testID="dateTimePicker"
+                    value={date}
+                    mode="date"
+                    display="spinner"
+                    onChange={handleDateChange}
+                    textColor="white" // Yazı rengini beyaz yap
+                    style={styles.datePicker}
+                  />
+                </View>
                 <TouchableOpacity style={styles.submitButton} onPress={handleDateSubmit}>
                   <Text style={styles.submitButtonText}>Submit</Text>
                 </TouchableOpacity>
               </>
             )}
-            {showJobOptions && (
+            {showJobOptions && !isBotTyping && (
               <View style={styles.jobOptionsContainer}>
                 <TouchableOpacity style={styles.jobOptionButton} onPress={() => handleJobOptionSubmit("Okuyorum")}>
                   <Text style={styles.buttonText}>Okuyorum</Text>
@@ -285,10 +338,6 @@ const styles = StyleSheet.create({
   background: {
     flex: 1,
     resizeMode: 'cover',
-  },
-  container: {
-    flex: 1,
-    justifyContent: 'flex-end',
   },
   messageList: {
     flex: 1,
@@ -323,7 +372,8 @@ const styles = StyleSheet.create({
   },
   messageText: {
     color: '#FBEFD1',
-    fontSize: 16,
+    fontSize: 18,
+    fontFamily: 'DavidLibre'
   },
   fixedContainer: {
     width: '100%',
@@ -339,7 +389,6 @@ const styles = StyleSheet.create({
     marginHorizontal: 10,
     marginBottom: 10,
   },
- 
   input: {
     flex: 1,
     padding: 10,
@@ -356,32 +405,43 @@ const styles = StyleSheet.create({
   genderContainer: {
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 20,
-  },
-  genderRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 10,
+    width: '100%',
+    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+    borderRadius: 20,
+    padding: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.2)',
   },
   genderButton: {
-    backgroundColor: '#444',
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
     borderRadius: 15,
     paddingVertical: 10,
     paddingHorizontal: 20,
-    marginHorizontal: 5,
-  },
-  fullWidthButton: {
+    marginVertical: 5,
     width: '80%',
   },
   buttonText: {
-    color: 'white',
+    color: '#CDC3AB',
     fontSize: 16,
+    textAlign: 'center',
+    fontFamily: 'DavidLibre',
+  },
+  datePickerContainer: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 20,
+    width: '100%',
+    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+    borderRadius: 20,
+    padding: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.2)',
   },
   datePicker: {
-    backgroundColor: '#2e2e2e',
-    borderRadius: 15,
-    marginHorizontal: 10,
-    marginVertical: 20,
+    width: '100%',
+    height: 200,
+    backgroundColor: 'transparent',
+    color: 'white',
   },
   submitButton: {
     backgroundColor: '#007AFF',
@@ -394,12 +454,17 @@ const styles = StyleSheet.create({
   submitButtonText: {
     color: 'white',
     fontSize: 16,
+    fontFamily: 'DavidLibre'
   },
   jobOptionsContainer: {
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 20,
+    width: '100%',
+    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+    borderRadius: 20,
     padding: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.2)',
   },
   jobOptionButton: {
     backgroundColor: '#444',
@@ -407,5 +472,13 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     paddingHorizontal: 20,
     marginVertical: 5,
+    width: '100%',
+  },
+  typingIndicator: {
+    color: '#FBEFD1',
+    fontSize: 16,
+    textAlign: 'center',
+    marginVertical: 10,
+    fontFamily: 'DavidLibre'
   },
 });

@@ -2,7 +2,7 @@
   "expo": {
     "name": "MadamPep",
     "slug": "MadamPep",
-    "version": "1.0.2",
+    "version": "1.0.3",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "myapp",
@@ -15,14 +15,20 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.madampep.ios",
-      "buildNumber": "2"  
+      "buildNumber": "3",
+      "config": {
+        "googleMobileAdsAppId": "ca-app-pub-3940256099942544~1458002511" 
+      }
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.madampep.android"
+      "package": "com.madampep.android",
+      "config": {
+        "googleMobileAdsAppId": "ca-app-pub-3940256099942544~3347511713" 
+      }
     },
     "web": {
       "bundler": "metro",

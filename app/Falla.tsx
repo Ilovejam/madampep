@@ -13,7 +13,7 @@ export default function Falla() {
   const [modalVisible, setModalVisible] = useState(false);
   const router = useRouter();
   const navigation = useNavigation();
-
+  
   useLayoutEffect(() => {
     navigation.setOptions({
       headerShown: false,
@@ -120,7 +120,7 @@ export default function Falla() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: 'black', // Ekranınızın arka plan rengi
+    backgroundColor: 'black',
   },
   background: {
     flex: 1,
@@ -129,7 +129,7 @@ const styles = StyleSheet.create({
   sandTimerContainer: {
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 10, // Kum saatini yukarı kaydırmak için
+    marginTop: 10,
   },
   sandTimer: {
     width: 300,
@@ -143,11 +143,6 @@ const styles = StyleSheet.create({
   speedUpContainer: {
     alignItems: 'center',
     marginTop: 20,
-  },
-  speedUpText: {
-    color: '#FBEFD1',
-    fontSize: 20,
-    marginBottom: 10,
   },
   speedUpButtons: {
     flexDirection: 'row',
@@ -180,9 +175,8 @@ const styles = StyleSheet.create({
   },
   paywallImage: {
     width: '80%',
-    height: '70%', // Yüksekliği küçültüldü
+    height: '70%',
     resizeMode: 'contain',
-    marginBottom:-290, // Resmi biraz yukarı kaydırmak için
+    marginBottom: -290,
   },
 });
-

@@ -1,18 +1,19 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, Image, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, Image, TouchableOpacity, Dimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 
-export default function CustomHeader({ zodiacSign }) {
+const { width } = Dimensions.get('window');
+
+export default function CustomHeader({ zodiacSign, isBotTyping }) {
   const navigation = useNavigation();
-  const [currentZodiac, setCurrentZodiac] = useState('Avatar');
+  const [currentZodiac, setCurrentZodiac] = useState(null);
 
   const handleBackPress = () => {
     navigation.navigate('Dashboard');
   };
 
   useEffect(() => {
-    console.log('Received Zodiac Sign Prop:', zodiacSign); // Debugging
     if (zodiacSign) {
       setCurrentZodiac(zodiacSign);
     }
@@ -31,7 +32,6 @@ export default function CustomHeader({ zodiacSign }) {
     libra: require('../assets/images/zodiac/libra.png'),
     scorpio: require('../assets/images/zodiac/scorpio.png'),
     sagittarius: require('../assets/images/zodiac/sagittarius.png'),
-    Avatar: require('../assets/images/Avatar.png'),  // Varsayılan resim
   };
 
   return (
@@ -43,11 +43,13 @@ export default function CustomHeader({ zodiacSign }) {
         <Image source={require('../assets/images/eye.png')} style={styles.headerImage} />
         <View>
           <Text style={styles.headerTitle}>Madampep</Text>
-          <Text style={styles.headerSubtitle}>online</Text>
+          <Text style={styles.headerSubtitle}>{isBotTyping ? 'yazıyor...' : 'online'}</Text>
         </View>
       </View>
       <Image source={require('../assets/images/frame.png')} style={[styles.profileImageLokum, styles.marginRight]} />
-      <Image source={zodiacImages[currentZodiac]} style={styles.profileImage} />
+      {currentZodiac && (
+        <Image source={zodiacImages[currentZodiac]} style={styles.profileImage} />
+      )}
     </View>
   );
 }
@@ -59,6 +61,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'black',
     paddingHorizontal: 10,
     paddingVertical: 15,
+    width: width, // Cihaz genişliğini ayarlamak için
   },
   headerTitleContainer: {
     flexDirection: 'row',
@@ -74,7 +77,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     color: '#FBEFD1',
     fontSize: 18,
-    fontFamily: 'DavidLibre-Regular',
+    fontFamily: 'DavidLibre',
   },
   headerSubtitle: {
     color: 'green',

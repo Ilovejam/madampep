@@ -36,7 +36,7 @@ export default function RootLayout() {
         />
         <Stack.Screen
           name="+not-found"
-          options={{ header: () => <CustomHeader /> }} // CustomHeader'ı kullanın
+          options={{ header: () => <CustomHeader zodiacSign={undefined} isBotTyping={undefined} /> }} // CustomHeader'ı kullanın
         />
         <Stack.Screen
           name="dashboard"
