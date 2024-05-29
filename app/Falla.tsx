@@ -76,7 +76,6 @@ export default function Falla() {
   return (
     <SafeAreaView style={styles.safeArea}>
       <ImageBackground source={require('../assets/images/background.png')} style={styles.background}>
-        <CustomHeader />
 
         <View style={styles.sandTimerContainer}>
           <LottieView
@@ -86,7 +85,7 @@ export default function Falla() {
             style={styles.sandTimer}
           />
         <View style={styles.timerContainer}>
-          <Text style={styles.timerText}>{formatTime(timer)}</Text>
+          <Text style={styles.timerText}>00:{formatTime(timer)}</Text>
         </View>
           <View style={styles.speedUpContainer}>
   <Text style={styles.speedUpTitle}>Hızlandır</Text>
@@ -130,6 +129,7 @@ const styles = StyleSheet.create({
   background: {
     flex: 1,
     resizeMode: 'cover',
+    top:40
   },
   sandTimerContainer: {
     justifyContent: 'center',
@@ -141,16 +141,17 @@ const styles = StyleSheet.create({
     height: 300,
   },
   timerText: {
-    color: 'white',
-    fontSize: 30,
+    color: '#CDC3AB',
+    fontSize: 20,
     marginVertical: 10,
     fontFamily:'DavidLibre'
   },
   timerContainer: {
     borderColor: '#CDC3AB', // Border rengi
     borderWidth: 1, // Border genişliği
-    padding: 2, // İç boşluk
-    borderRadius: 5, // Köşeleri yuvarlama
+    paddingHorizontal: 14, // İç boşluk
+    paddingVertical:4,
+    borderRadius: 10, // Köşeleri yuvarlama
     marginVertical: 10, // Üst ve alt boşluk
     backgroundColor: 'rgba(66, 66, 66, 0.05)', // Arka plan rengi %5 opacity
     alignItems: 'center', // İçeriği ortalamak için
