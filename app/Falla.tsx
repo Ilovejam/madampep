@@ -85,17 +85,22 @@ export default function Falla() {
             loop
             style={styles.sandTimer}
           />
+        <View style={styles.timerContainer}>
           <Text style={styles.timerText}>{formatTime(timer)}</Text>
+        </View>
           <View style={styles.speedUpContainer}>
-            <View style={styles.speedUpButtons}>
-              <TouchableOpacity style={styles.speedUpButton} onPress={handleSpeedUpPress}>
-                <Image source={require('../assets/images/videola.png')} style={styles.buttonImage} />
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.speedUpButton} onPress={handleLokumlaPress}>
-                <Image source={require('../assets/images/lokumla.png')} style={styles.buttonImage} />
-              </TouchableOpacity>
-            </View>
-          </View>
+  <Text style={styles.speedUpTitle}>Hızlandır</Text>
+  <View style={styles.speedUpButtons}>
+    <TouchableOpacity style={styles.speedUpButton} onPress={handleSpeedUpPress}>
+      <Image source={require('../assets/images/videola.png')} style={styles.buttonImage} />
+     </TouchableOpacity>
+    <TouchableOpacity style={styles.speedUpButton} onPress={handleLokumlaPress}>
+      <Image source={require('../assets/images/lokumla.png')} style={styles.buttonImage} />
+     </TouchableOpacity>
+  </View>
+</View>
+
+
         </View>
 
         <Modal
@@ -107,8 +112,8 @@ export default function Falla() {
           }}
         >
           <TouchableOpacity style={styles.modalOverlay} onPress={handleModalPress}>
-            <BlurView intensity={50} style={styles.blurView}>
-              <Image source={require('../assets/images/paywall.png')} style={styles.paywallImage} />
+            <BlurView intensity={10} style={styles.blurView}>
+              <Image source={require('../assets/Paywall.png')} style={styles.paywallImage} />
             </BlurView>
           </TouchableOpacity>
         </Modal>
@@ -139,28 +144,18 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 30,
     marginVertical: 10,
+    fontFamily:'DavidLibre'
   },
-  speedUpContainer: {
-    alignItems: 'center',
-    marginTop: 20,
+  timerContainer: {
+    borderColor: '#CDC3AB', // Border rengi
+    borderWidth: 1, // Border genişliği
+    padding: 2, // İç boşluk
+    borderRadius: 5, // Köşeleri yuvarlama
+    marginVertical: 10, // Üst ve alt boşluk
+    backgroundColor: 'rgba(66, 66, 66, 0.05)', // Arka plan rengi %5 opacity
+    alignItems: 'center', // İçeriği ortalamak için
   },
-  speedUpButtons: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    width: '80%',
-  },
-  speedUpButton: {
-    backgroundColor: 'rgba(0, 0, 0, 0.6)',
-    padding: 15,
-    borderRadius: 10,
-    alignItems: 'center',
-    marginHorizontal: 5,
-  },
-  buttonImage: {
-    width: 100,
-    height: 100,
-    resizeMode: 'contain',
-  },
+
   modalOverlay: {
     flex: 1,
     justifyContent: 'center',
@@ -174,9 +169,49 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   paywallImage: {
-    width: '80%',
+    width: '100%',
     height: '70%',
     resizeMode: 'contain',
     marginBottom: -290,
   },
+  speedUpContainer: {
+    alignItems: 'center',
+    marginTop: 20,
+    backgroundColor: 'rgba(66, 66, 66, 0.05)', // %5 opacity ile 424242 rengi
+    padding: 15,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(205, 195, 171, 0.15)', // %15 opacity ile CDC3AB rengi
+  },
+  speedUpTitle: {
+    color: '#CDC3AB',
+    fontSize: 25,
+    marginBottom: 10,
+    textAlign: 'center',
+    fontFamily: 'DavidLibre', // Belirttiğiniz font
+  },
+  speedUpButtons: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  speedUpButton: {
+    alignItems: 'center',
+    marginHorizontal: 20, // Ortak mesafe için artırıldı
+  },
+  buttonImage: {
+    width: 90, // Butonları biraz daha büyütmek için genişlik artırıldı
+    height: 90, // Butonları biraz daha büyütmek için yükseklik artırıldı
+    resizeMode: 'contain',
+  },
+
+  buttonText: {
+    color: 'white',
+    fontSize: 14,
+    marginTop: 5,
+    textAlign: 'center',
+    fontFamily: 'DavidLibre', // Belirttiğiniz font
+  },
+
+
 });

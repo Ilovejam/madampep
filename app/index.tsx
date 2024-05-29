@@ -24,6 +24,6 @@ export default function HomeScreen() {
       );
     case 'SplashScreen':
     default:
-      return <SplashScreen onAnimationEnd={() => setCurrentScreen('UploadImage')} />;
+      return <SplashScreen onAnimationEnd={() => setCurrentScreen('ChatScreen')} />;
   }
 }

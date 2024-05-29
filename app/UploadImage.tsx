@@ -41,11 +41,15 @@ export default function UploadImage({ onSubmit, onClose }) {
         });
       });
 
+      console.log('Uploading images:', formData);
+
       const response = await axios.post('http://35.228.6.241/api/v1/upload', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
       });
+
+      console.log('Response:', response);
 
       const { predictions } = response.data;
       const allValid = predictions.every(prediction => prediction.isCoffeeCup);
@@ -56,7 +60,16 @@ export default function UploadImage({ onSubmit, onClose }) {
         onSubmit();
       }
     } catch (error) {
-      console.error('Error uploading images:', error.message);
+      console.error('Error uploading images:', error);
+      if (error.response) {
+        console.error('Response data:', error.response.data);
+        console.error('Response status:', error.response.status);
+        console.error('Response headers:', error.response.headers);
+      } else if (error.request) {
+        console.error('Request data:', error.request);
+      } else {
+        console.error('Error message:', error.message);
+      }
       Alert.alert('Hata', `Resimleri yüklerken bir hata oluştu: ${error.message}`);
     }
   };
@@ -91,7 +104,9 @@ export default function UploadImage({ onSubmit, onClose }) {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
+    width: '100%',
     backgroundColor: 'black',
+    borderRadius: 20,
   },
   container: {
     flex: 1,

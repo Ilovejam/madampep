@@ -1,11 +1,14 @@
 import React, { useState, useEffect, useLayoutEffect, useRef } from 'react';
-import { StyleSheet, View, ImageBackground, Text, TextInput, TouchableOpacity, FlatList, Keyboard, SafeAreaView, KeyboardAvoidingView, Platform } from 'react-native';
+import { StyleSheet, Modal, View, ImageBackground, Text, TextInput, TouchableOpacity, FlatList, Keyboard, SafeAreaView, KeyboardAvoidingView, Platform, Image, Alert } from 'react-native';
 import LottieView from 'lottie-react-native';
 import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useNavigation } from '@react-navigation/native';
 import axios from 'axios';
 import CustomHeader from '@/components/CustomHeader';
+import * as ImagePicker from 'expo-image-picker';
+import UploadImage from './UploadImage';
+
 
 const zodiacSigns = {
   'Oğlak': 'capricorn',
@@ -53,6 +56,10 @@ export default function ChatScreen() {
   const flatListRef = useRef(null);
   const navigation = useNavigation();
   const [isBotTyping, setIsBotTyping] = useState(true);
+  const [showRelationshipOptions, setShowRelationshipOptions] = useState(false);
+  const [showUploadButton, setShowUploadButton] = useState(false);
+  const [showUploadModal, setShowUploadModal] = useState(false);
+  const [photos, setPhotos] = useState([]);
 
   useEffect(() => {
     const keyboardDidShowListener = Keyboard.addListener('keyboardDidShow', () => {
@@ -77,9 +84,11 @@ export default function ChatScreen() {
   useEffect(() => {
     let timeout;
     const initialMessages = [
-      { id: 1, text: "Vaay... Güzel fincan! Ama önce seni biraz tanımam gerek...", sender: "bot" },
-      { id: 2, text: "Adını alabilir miyim? Geleceğini görmem için bana o harfler lazım...", sender: "bot" }
-    ];
+      { id: `msg-1-${Date.now()}`, text: "Selam Yabancı ", sender: "bot" },
+      { id: `msg-2-${Date.now()}`, text: "Kahveler içildi ise, şimdi gelelim hoş muhabbete.", sender: "bot" },
+      { id: `msg-3-${Date.now()}`, text: "Adını bana bahşeder misin?.", sender: "bot" },
+      { id: `msg-4-${Date.now()}`, text: "Geleceğini görmem için o harfler bana lazım...", sender: "bot" }
+    ];    
 
     const addMessages = (index) => {
       if (index < initialMessages.length) {
@@ -87,7 +96,7 @@ export default function ChatScreen() {
           setMessages((prevMessages) => [
             ...prevMessages.slice(0, prevMessages.length - 1),
             initialMessages[index],
-            { id: `loading-${index + 1}`, text: '...', sender: 'bot' },
+            { id: `loading-${index + 1}-${Date.now()}`, text: '...', sender: 'bot' },
           ]);
           addMessages(index + 1);
         }, 2000);
@@ -96,6 +105,7 @@ export default function ChatScreen() {
         setIsBotTyping(false); // Set typing to false after initial messages
       }
     };
+    
 
     addMessages(0);
 
@@ -120,18 +130,18 @@ export default function ChatScreen() {
 
   const sendDelayedMessages = (messages, callback) => {
     setIsBotTyping(true); // Set bot typing to true before sending messages
-
+  
     setMessages(prevMessages => [
       ...prevMessages,
-      { id: `loading-${prevMessages.length}`, text: '...', sender: 'bot' }
+      { id: `loading-${prevMessages.length}-${Date.now()}`, text: '...', sender: 'bot' }
     ]);
-
+  
     messages.forEach((message, index) => {
       setTimeout(() => {
         setMessages(prevMessages => [
           ...prevMessages.slice(0, prevMessages.length - 1),
-          { id: prevMessages.length + 1, text: message.text, sender: message.sender },
-          { id: `loading-${index + 1}`, text: '...', sender: 'bot' }
+          { id: `msg-${prevMessages.length + 1}-${Date.now()}`, text: message.text, sender: message.sender },
+          { id: `loading-${index + 1}-${Date.now()}`, text: '...', sender: 'bot' }
         ]);
         if (index === messages.length - 1) {
           setTimeout(() => {
@@ -143,6 +153,7 @@ export default function ChatScreen() {
       }, 2000 * (index + 1));
     });
   };
+  
 
   const renderMessage = ({ item }) => (
     <View style={[styles.messageContainer, item.sender === "user" ? styles.userMessage : styles.botMessage]}>
@@ -159,7 +170,7 @@ export default function ChatScreen() {
     setUserInputs(prevInputs => [...prevInputs, { question: "Adınız", answer: name }]);
     setStep(2);
     sendDelayedMessages([
-      { text: "Güzel isim...", sender: "bot" },
+      { text: `Güzel isim ${name}...`, sender: "bot" },
       { text: "Peki kendini nasıl tanımlıyorsun? Sana hitap edebilmem için bu bilgi önemli.", sender: "bot" }
     ]);
   };
@@ -218,27 +229,162 @@ export default function ChatScreen() {
     sendDelayedMessages(zodiacMessages, () => setShowJobOptions(true));
   };
   
-  const handleJobOptionSubmit = (option) => {
+  // const handleJobOptionSubmit = (option) => {
+  //   sendMessage(option, "user");
+  //   setUserInputs(prevInputs => [...prevInputs, { question: "Meslek", answer: option }]);
+  //   setShowJobOptions(false);
+  //   sendDelayedMessages([
+  //     { text: "Hazırız sanırım.", sender: "bot" },
+  //     { text: "Bana biraz zaman ver. Fincanına odaklanmam lazım...", sender: "bot" }
+  //   ], async () => {
+  //     try {
+  //       const response = await axios.post('https://madampep-backend.vercel.app/api/message', {
+  //         inputs: userInputs
+  //       });
+  //       console.log('Response:', response.data);  // Burada response verisini konsola yazdırıyoruz
+  //       // response.data'yı Falla ekranına geçirin
+  //       navigation.replace('Falla', { response: response.data });
+  //     } catch (error) {
+  //       console.error('Error sending data:', error);
+  //     }
+  //   });
+  // };
+  const handleFalForm = () => {
+    sendDelayedMessages([
+      { text: "Kahveler içildi ise şimdi gelelim hoş muhabbete.", sender: "bot" },
+      { text: "Kahve fincanını benimle paylaş ki, o karanlık telvelerden aydınlık bir yol bulabileyim.", sender: "bot" }
+    ], () => setShowUploadButton(true));
+  };
+  
+  const handleJobOptionSubmit = async (option) => {
     sendMessage(option, "user");
     setUserInputs(prevInputs => [...prevInputs, { question: "Meslek", answer: option }]);
     setShowJobOptions(false);
     sendDelayedMessages([
-      { text: "Hazırız sanırım.", sender: "bot" },
-      { text: "Bana biraz zaman ver. Fincanına odaklanmam lazım...", sender: "bot" }
-    ], async () => {
-      try {
-        const response = await axios.post('https://madampep-backend.vercel.app/api/message', {
-          inputs: userInputs
-        });
-        console.log('Response:', response.data);  // Burada response verisini konsola yazdırıyoruz
-        // response.data'yı Falla ekranına geçirin
-        navigation.replace('Falla', { response: response.data });
-      } catch (error) {
-        console.error('Error sending data:', error);
-      }
+      { text: "Tamamdır...", sender: "bot" },
+      { text: "Peki...", sender: "bot" },
+      { text: "Aşk hayatının şu an hangi aşamasındasın?", sender: "bot" }
+    ], () => setShowRelationshipOptions(true));
+  };
+  
+  const handleRelationshipOptionSubmit = async (option) => {
+    sendMessage(option, "user");
+    setUserInputs(prevInputs => [...prevInputs, { question: "İlişki Durumu", answer: option }]);
+    setShowRelationshipOptions(false);
+    sendDelayedMessages([
+      { text: "Ne Güzel..", sender: "bot" },
+      { text: "En güzel zamanlarındasın.", sender: "bot" },
+      { text: "Aşk hayatı senin için mutluluk dolu olsun.", sender: "bot" },
+      { text: "Tanışma faslımızın sonuna geldik.", sender: "bot" }
+    ], () => {
+      sendDelayedMessages([
+        { text: "Kahveler içildi ise şimdi gelelim hoş muhabbete.", sender: "bot" },
+        { text: "Kahve fincanını benimle paylaş ki, o karanlık telvelerden aydınlık bir yol bulabileyim.", sender: "bot" }
+      ], () => setShowUploadButton(true));
     });
   };
   
+  const handleUploadPhoto = async () => {
+    // Arka planda post işlemi başlat
+    axios.post('https://madampep-backend.vercel.app/api/message', {
+      inputs: userInputs
+    })
+    .then(response => {
+      console.log('Response:', response.data);
+    })
+    .catch(error => {
+      console.error('Error sending data:', error);
+    });
+  
+    // Popup olarak modal'ı aç
+    setShowUploadModal(true);
+  };
+  
+  
+  
+  const pickImage = async () => {
+    try {
+      let result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsMultipleSelection: true,
+        selectionLimit: 3,
+        base64: true,
+      });
+  
+      if (!result.canceled) {
+        setPhotos(result.assets.slice(0, 3));
+      }
+    } catch (error) {
+      console.error('Error picking image:', error);
+      Alert.alert('Hata', 'Resim seçerken bir hata oluştu.');
+    }
+  };
+
+  const handleUploadImageSubmit = () => {
+    setShowUploadModal(false);
+    setShowUploadButton(false); // Fotoğraf yüklendiğinde butonu gizle
+    sendMessage("Yükledim", "user");
+    sendDelayedMessages([
+      { text: "Hmm", sender: "bot" },
+      { text: "Güzel bir fincan.", sender: "bot" },
+      { text: "Şimdi bana biraz zaman tanı ki bu karanlık telveden aydınlık bir yol çıkartabileyim...", sender: "bot" }
+    ], () => {
+      setTimeout(() => {
+        navigation.replace('Falla');
+      }, 2000);
+    });
+  };
+  
+  const handleSubmit = async () => {
+    if (photos.length < 1) {
+      Alert.alert('Hata', 'En az bir fotoğraf yüklemelisin.');
+      return;
+    }
+  
+    try {
+      const formData = new FormData();
+      photos.forEach((photo, index) => {
+        formData.append('images', {
+          uri: photo.uri,
+          type: 'image/jpeg',
+          name: `photo_${index}.jpg`,
+        });
+      });
+  
+      console.log('Uploading images:', formData);
+  
+      const response = await axios.post('http://35.228.6.241/api/v1/upload', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+  
+      console.log('Response:', response);
+  
+      const { predictions } = response.data;
+      const allValid = predictions.every(prediction => prediction.isCoffeeCup);
+  
+      if (!allValid) {
+        Alert.alert('Hata', 'Lütfen düzgün resimler yükleyin. Tüm resimler kahve fincanı değil.');
+      } else {
+        setShowUploadModal(false);
+        sendMessage("Yükledim", "user");
+        sendDelayedMessages([{ text: "Tamamdır", sender: "bot" }]);
+      }
+    } catch (error) {
+      console.error('Error uploading images:', error);
+      if (error.response) {
+        console.error('Response data:', error.response.data);
+        console.error('Response status:', error.response.status);
+        console.error('Response headers:', error.response.headers);
+      } else if (error.request) {
+        console.error('Request data:', error.request);
+      } else {
+        console.error('Error message:', error.message);
+      }
+      Alert.alert('Hata', `Resimleri yüklerken bir hata oluştu: ${error.message}`);
+    }
+  };
   
   
   
@@ -250,16 +396,17 @@ export default function ChatScreen() {
       <SafeAreaView style={styles.safeArea}>
         <ImageBackground source={require('../assets/images/background.png')} style={styles.background}>
         <CustomHeader zodiacSign={zodiacSign} isBotTyping={isBotTyping} />
-          <FlatList
-            ref={flatListRef}
-            data={messages}
-            renderItem={renderMessage}
-            keyExtractor={item => item.id.toString()}
-            style={styles.messageList}
-            contentContainerStyle={styles.messageListContent}
-            onContentSizeChange={() => flatListRef.current.scrollToEnd({ animated: true })}
-            onLayout={() => flatListRef.current.scrollToEnd({ animated: true })}
-          />
+        <FlatList
+          ref={flatListRef}
+          data={messages}
+          renderItem={renderMessage}
+          keyExtractor={item => item.id.toString()} // Benzersiz key değerini kullanın
+          style={styles.messageList}
+          contentContainerStyle={styles.messageListContent}
+          onContentSizeChange={() => flatListRef.current.scrollToEnd({ animated: true })}
+          onLayout={() => flatListRef.current.scrollToEnd({ animated: true })}
+        />
+
           {isBotTyping && <Text style={styles.typingIndicator}></Text>}
           <View style={styles.fixedContainer}>
             {step === 1 ? (
@@ -272,10 +419,17 @@ export default function ChatScreen() {
                   onChangeText={setName}
                   onSubmitEditing={handleNameSubmit}
                 />
-                <TouchableOpacity style={styles.sendButton} onPress={handleNameSubmit} disabled={!name.trim()}>
-                  <Ionicons name="send" size={24} color={!name.trim() ? '#888' : '#FBEFD1'} />
-                </TouchableOpacity>
-              </View>
+                <TouchableOpacity
+      style={[
+        styles.sendButton,
+        !name.trim() && styles.disabledButton, // Name boşsa disabledButton stilini uygula
+      ]}
+      onPress={handleNameSubmit}
+      disabled={!name.trim()}
+    >
+      <Ionicons name="send" size={24} color="#FBEFD1" />
+    </TouchableOpacity>
+          </View>
             ) : step === 2 && !isBotTyping ? (
               <View style={styles.genderContainer}>
                 <TouchableOpacity style={styles.genderButton} onPress={() => handleGenderSubmit("Kadın")}>
@@ -323,6 +477,47 @@ export default function ChatScreen() {
                 </TouchableOpacity>
               </View>
             )}
+            {showRelationshipOptions && !isBotTyping && (
+              <View style={styles.relationshipOptionsContainer}>
+                <TouchableOpacity style={styles.relationshipOptionButton} onPress={() => handleRelationshipOptionSubmit("Evliyim")}>
+                  <Text style={styles.buttonText}>Evliyim</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.relationshipOptionButton} onPress={() => handleRelationshipOptionSubmit("Nişanlıyım")}>
+                  <Text style={styles.buttonText}>Nişanlıyım</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.relationshipOptionButton} onPress={() => handleRelationshipOptionSubmit("Yok")}>
+                  <Text style={styles.buttonText}>Yok</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.relationshipOptionButton} onPress={() => handleRelationshipOptionSubmit("Sevgilim var")}>
+                  <Text style={styles.buttonText}>Sevgilim var</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+           {showUploadButton && (
+              <View style={styles.genderContainer}>
+                <TouchableOpacity style={styles.genderButton} onPress={handleUploadPhoto}>
+                  <Text style={styles.buttonText}>Kahve Fotoğrafı Yükle</Text>
+                </TouchableOpacity>
+              </View>
+          )}
+         <Modal
+  animationType="slide"
+  transparent={true}
+  visible={showUploadModal}
+  onRequestClose={() => setShowUploadModal(false)}
+>
+  <View style={styles.centeredView}>
+    <ImageBackground source={require('../assets/images/background.png')} style={styles.background}>
+      <View style={[styles.modalView, { width: '90%', height: '80%' }]}>
+        <UploadImage
+          onSubmit={handleUploadImageSubmit}
+          onClose={() => setShowUploadModal(false)}
+        />
+      </View>
+    </ImageBackground>
+  </View>
+</Modal>
+
           </View>
         </ImageBackground>
       </SafeAreaView>
@@ -377,7 +572,6 @@ const styles = StyleSheet.create({
   },
   fixedContainer: {
     width: '100%',
-    paddingBottom: 10,
   },
   inputContainer: {
     flexDirection: 'row',
@@ -399,21 +593,23 @@ const styles = StyleSheet.create({
   },
   sendButton: {
     padding: 10,
-    backgroundColor: '#007AFF',
+    backgroundColor: '#883AC5',
     borderRadius: 20,
   },
   genderContainer: {
     justifyContent: 'center',
     alignItems: 'center',
-    width: '100%',
-    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+    width: '90%',
+    backgroundColor: 'rgba(66, 66, 66, 0.05)', 
     borderRadius: 20,
     padding: 10,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.2)',
+    borderColor: 'rgba(205, 195, 171, 0.15)', 
+    alignSelf: 'center' // Ekranda ortalandı
+
   },
   genderButton: {
-    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    backgroundColor: 'rgba(205, 195, 171, 0.05)',
     borderRadius: 15,
     paddingVertical: 10,
     paddingHorizontal: 20,
@@ -422,7 +618,7 @@ const styles = StyleSheet.create({
   },
   buttonText: {
     color: '#CDC3AB',
-    fontSize: 16,
+    fontSize: 20,
     textAlign: 'center',
     fontFamily: 'DavidLibre',
   },
@@ -430,12 +626,14 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 20,
-    width: '100%',
+    width: '90%',
     backgroundColor: 'rgba(0, 0, 0, 0.8)',
     borderRadius: 20,
     padding: 10,
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.2)',
+    alignSelf: 'center' // Ekranda ortalandı
+
   },
   datePicker: {
     width: '100%',
@@ -444,7 +642,7 @@ const styles = StyleSheet.create({
     color: 'white',
   },
   submitButton: {
-    backgroundColor: '#007AFF',
+    backgroundColor: '#883AC5',
     borderRadius: 20,
     paddingVertical: 10,
     paddingHorizontal: 20,
@@ -452,28 +650,49 @@ const styles = StyleSheet.create({
     marginHorizontal: 10,
   },
   submitButtonText: {
-    color: 'white',
+    color: '#FFFFFF',
     fontSize: 16,
     fontFamily: 'DavidLibre'
   },
   jobOptionsContainer: {
     justifyContent: 'center',
     alignItems: 'center',
-    width: '100%',
-    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+    width: '90%',
+    backgroundColor: 'rgba(66, 66, 66, 0.05)', 
     borderRadius: 20,
     padding: 10,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.2)',
+    borderColor: 'rgba(205, 195, 171, 0.15)', 
+    alignSelf: 'center' // Ekranda ortalandı
+
   },
   jobOptionButton: {
-    backgroundColor: '#444',
+    backgroundColor: 'rgba(205, 195, 171, 0.05)',
     borderRadius: 15,
     paddingVertical: 10,
     paddingHorizontal: 20,
     marginVertical: 5,
-    width: '100%',
+    width: '90%',
   },
+  relationshipOptionsContainer: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: '90%',
+    backgroundColor: 'rgba(66, 66, 66, 0.05)', 
+    borderRadius: 20,
+    padding: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(205, 195, 171, 0.15)', 
+    alignSelf: 'center' // Ekranda ortalandı
+  },  
+  relationshipOptionButton: {
+    backgroundColor: 'rgba(205, 195, 171, 0.05)',
+    borderRadius: 15,
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    marginVertical: 5,
+    width: '90%',
+  },  
   typingIndicator: {
     color: '#FBEFD1',
     fontSize: 16,
@@ -481,4 +700,117 @@ const styles = StyleSheet.create({
     marginVertical: 10,
     fontFamily: 'DavidLibre'
   },
+  uploadButton: {
+    backgroundColor: '#883AC5',
+    borderRadius: 20,
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    alignItems: 'center',
+    marginHorizontal: 10,
+    marginVertical: 20
+  },
+  uploadButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontFamily: 'DavidLibre'
+  },
+  centeredView: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 22,
+  },
+
+  button: {
+    borderRadius: 20,
+    padding: 10,
+    elevation: 2,
+  },
+  buttonClose: {
+    backgroundColor: '#2196F3',
+  },
+  textStyle: {
+    color: 'white',
+    fontWeight: 'bold',
+    textAlign: 'center',
+  },
+  modalText: {
+    marginBottom: 15,
+    textAlign: 'center',
+  },
+  closeText: {
+    color: 'purple',
+    fontSize: 16,
+    textAlign: 'left',
+    margin: 16,
+  },
+  title: {
+    color: '#fff',
+    fontSize: 24,
+    fontWeight: 'bold',
+    textAlign: 'center',
+  },
+  photosContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    marginVertical: 10,
+  },
+  photoWrapper: {
+    width: 60,
+    height: 60,
+    marginHorizontal: 10,
+    borderWidth: 2,
+    borderColor: '#fff',
+    borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  photoSelected: {
+    borderColor: 'yellow',
+  },
+  photo: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 8,
+  },
+  controlButton: {
+    alignSelf: 'center',
+    marginVertical: 20,
+  },
+  submitImageButton: {
+    backgroundColor: '#fff',
+    paddingVertical: 15,
+    marginHorizontal: 20,
+    borderRadius: 10,
+    marginBottom: 20,
+  },
+  submitImageButtonText: {
+    textAlign: 'center',
+    color: '#000',
+    fontWeight: 'bold',
+    fontSize: 16,
+  },
+  centeredView: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 22,
+  },
+  modalView: {
+    margin: 20,
+    backgroundColor: 'black',
+    borderRadius: 20,
+    padding: 35,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+
+
 });

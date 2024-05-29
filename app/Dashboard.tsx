@@ -20,7 +20,6 @@ export default function Dashboard() {
   return (
     <SafeAreaView style={styles.safeArea} >
       <ImageBackground source={require('../assets/images/background.png')} style={styles.background}>
-          <CustomHeader></CustomHeader>
         <ScrollView contentContainerStyle={styles.container}>
           <LottieView
             source={require('../assets/eye.json')}
@@ -64,6 +63,7 @@ const styles = StyleSheet.create({
   container: {
     padding: 20,
     alignItems: 'center',
+    borderColor: 'rgba(205, 195, 171, 0.15)',
   },
   eyeAnimation: {
     width: 80,
@@ -76,33 +76,36 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   card: {
-    backgroundColor: '#000000',
-    borderColor: '#FFFFFF',
+    backgroundColor: 'rgba(66, 66, 66, 0.05)', 
+    borderColor: '#CDC3AB',
     borderWidth: 1,
-    padding: 20,
+    padding: 30,
     borderRadius: 10,
     marginBottom: 20,
     width: '100%',
     alignItems: 'center',
+    
   },
   cardInactive: {
-    backgroundColor: '#000000',
-    opacity: 0.6,
-    padding: 20,
+    backgroundColor: 'rgba(66, 66, 66, 0.05)', 
+    borderColor: 'rgba(205, 195, 171, 0.1)',
+    borderWidth: 1,
+    padding: 30,
     borderRadius: 10,
     marginBottom: 20,
     width: '100%',
     alignItems: 'center',
+    
   },
   cardTitle: {
-    color: '#FBEFD1',
-    fontSize: 18,
-    fontFamily: 'DavidLibre-Regular',
+    color: '#CDC3AB',
+    fontSize: 25,
+    fontFamily: 'DavidLibre',
   },
   cardTitleInactive: {
-    color: '#FBEFD1',
-    fontSize: 18,
-    fontFamily: 'DavidLibre-Regular',
-    opacity: 0.6,
+    color: '#CDC3AB',
+    fontSize: 25,
+    fontFamily: 'DavidLibre',
+    opacity: 0.1,
   },
 });

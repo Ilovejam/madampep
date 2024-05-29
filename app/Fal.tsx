@@ -10,6 +10,8 @@ export default function Fal() {
   const [keyboardVisible, setKeyboardVisible] = useState(false);
   const flatListRef = useRef(null);
   const navigation = useNavigation();
+  const [isBotTyping, setIsBotTyping] = useState(false);
+  const [zodiacSign, setZodiacSign] = useState('Avatar');
 
   useLayoutEffect(() => {
     navigation.setOptions({
@@ -18,24 +20,36 @@ export default function Fal() {
   }, [navigation]);
 
   useEffect(() => {
-    // AI yanıtını almak için API çağrısı yapın
     axios.get('https://madampep-backend.vercel.app/api/ai-response')
       .then(response => {
         const aiMessage = response.data.message;
         const messageParagraphs = aiMessage.split('\n').filter(paragraph => paragraph.trim() !== '');
-  
         const formattedMessages = messageParagraphs.map((paragraph, index) => ({
-          id: (messages.length + index + 1).toString(),
+          id: `ai-${index}-${Date.now()}`,
           text: paragraph,
           sender: 'bot'
         }));
   
-        setMessages(prevMessages => [...prevMessages, ...formattedMessages]);
+        showMessagesSequentially(formattedMessages);
       })
       .catch(error => {
         console.error('Error fetching AI response:', error);
       });
   }, []);
+  
+  const showMessagesSequentially = (messages) => {
+    setIsBotTyping(true); // Bot yazıyor durumunu başlat
+    messages.forEach((message, index) => {
+      setTimeout(() => {
+        setMessages(prevMessages => [...prevMessages, message]);
+        if (index === messages.length - 1) {
+          setIsBotTyping(false); // Son mesajdan sonra bot yazıyor durumunu durdur
+        }
+      }, index * 2000);
+    });
+  };
+  
+  
   
 
   useEffect(() => {
@@ -60,30 +74,31 @@ export default function Fal() {
 
   const sendMessage = async (text) => {
     if (text.trim()) {
-      setMessages(prevMessages => [...prevMessages, { id: (prevMessages.length + 1).toString(), text, sender: 'user' }]);
+      const userMessage = { id: `user-${Date.now()}`, text, sender: 'user' };
+      setMessages(prevMessages => [...prevMessages, userMessage]);
       setInput('');
+      setIsBotTyping(true); // Kullanıcı mesajı gönderildikten sonra bot yazıyor durumunu başlat
   
       try {
         const response = await axios.post('https://madampep-backend.vercel.app/api/short-message', {
-          inputs: [
-            { question: 'Kullanıcı Mesajı', answer: text }
-          ]
+          inputs: [{ question: 'Kullanıcı Mesajı', answer: text }]
         });
         const aiMessage = response.data.message;
         const messageParagraphs = aiMessage.split('\n').filter(paragraph => paragraph.trim() !== '');
-  
         const formattedMessages = messageParagraphs.map((paragraph, index) => ({
-          id: (messages.length + index + 2).toString(),
+          id: `ai-${index + userMessage.id}-${Date.now()}`,
           text: paragraph,
           sender: 'bot'
         }));
-  
-        setMessages(prevMessages => [...prevMessages, ...formattedMessages]);
+        showMessagesSequentially(formattedMessages);
       } catch (error) {
         console.error('Error sending data:', error);
+        setIsBotTyping(false); // Hata durumunda bot yazıyor durumunu durdur
       }
     }
   };
+  
+  
   
 
   const renderMessage = ({ item }) => (
@@ -100,7 +115,7 @@ export default function Fal() {
     >
       <SafeAreaView style={styles.safeArea}>
         <ImageBackground source={require('../assets/images/background.png')} style={styles.background}>
-          <CustomHeader />
+        <CustomHeader isBotTyping={isBotTyping} />
           <FlatList
             ref={flatListRef}
             data={messages}
@@ -186,11 +201,11 @@ const styles = StyleSheet.create({
     marginLeft: 10,
     paddingVertical: 10,
     paddingHorizontal: 20,
-    backgroundColor: '#007AFF',
+    backgroundColor: '#883AC5',
     borderRadius: 20,
   },
   sendButtonText: {
-    color: 'white',
+    color: 'FFFFFF',
     fontSize: 16,
     fontFamily: 'DavidLibre'
   },

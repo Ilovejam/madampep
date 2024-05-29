@@ -54,8 +54,8 @@ export default function SplashScreen({ onAnimationEnd }) {
             style={styles.eyeAnimation}
           />
         </View>
-        <Animated.View style={{ opacity: textOpacity }}>
-          <Text style={styles.title}>Selam tatlım!</Text>
+        <Animated.View style={[styles.textContainer, { opacity: textOpacity }]}>
+          <Text style={styles.title}>Hoş Geldin Yabancı!</Text>
           <Text style={styles.text}>
             Gizem perdesini arala,{'\n'}
             ışıkların arasından geç,{'\n'}
@@ -79,8 +79,8 @@ const styles = StyleSheet.create({
   },
   animationContainer: {
     position: 'relative',
-    width: 200,
-    height: 200,
+    width: 300, // Lottie animasyonunu büyüttük
+    height: 300, // Lottie animasyonunu büyüttük
     marginTop: 80,
   },
   mandalaAnimation: {
@@ -93,6 +93,9 @@ const styles = StyleSheet.create({
     left: '28%',
     width: '45%',
     height: '45%',
+  },
+  textContainer: {
+    marginTop: 30, // Animasyon ile metin arasındaki boşluğu artırdık
   },
   title: {
     color: '#FBEFD1',

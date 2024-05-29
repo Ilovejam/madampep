@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, Image, TouchableOpacity, Dimensions } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
+import LottieView from 'lottie-react-native';
 
 const { width } = Dimensions.get('window');
 
-export default function CustomHeader({ zodiacSign, isBotTyping }) {
+export default function CustomHeader({ zodiacSign, isBotTyping, showFrame = false }) {
   const navigation = useNavigation();
   const [currentZodiac, setCurrentZodiac] = useState(null);
 
@@ -37,16 +37,23 @@ export default function CustomHeader({ zodiacSign, isBotTyping }) {
   return (
     <View style={styles.header}>
       <TouchableOpacity onPress={handleBackPress}>
-        <Ionicons name="arrow-back" size={24} color="#fff" />
+        <Image source={require('../assets/left.png')} style={styles.backIcon} />
       </TouchableOpacity>
       <View style={styles.headerTitleContainer}>
-        <Image source={require('../assets/images/eye.png')} style={styles.headerImage} />
+        <LottieView
+          source={require('../assets/eye.json')}
+          autoPlay
+          loop
+          style={styles.headerImage}
+        />
         <View>
           <Text style={styles.headerTitle}>Madampep</Text>
           <Text style={styles.headerSubtitle}>{isBotTyping ? 'yazıyor...' : 'online'}</Text>
         </View>
       </View>
-      <Image source={require('../assets/images/frame.png')} style={[styles.profileImageLokum, styles.marginRight]} />
+      {showFrame && (
+        <Image source={require('../assets/images/frame.png')} style={[styles.profileImageLokum, styles.marginRight]} />
+      )}
       {currentZodiac && (
         <Image source={zodiacImages[currentZodiac]} style={styles.profileImage} />
       )}
@@ -69,10 +76,15 @@ const styles = StyleSheet.create({
     marginLeft: 10,
     flex: 1,
   },
+  backIcon: {
+    width: 15, // Icon'un genişliği
+    height: 15, // Icon'un yüksekliği
+    tintColor: '#CDC3AB', // Icon'un rengini ayarlamak için (sadece PNG'de çalışır)
+  },
   headerImage: {
-    width: 30,
-    height: 30,
-    marginRight: 10,
+    width: 45, // Lottie animasyonu büyütüldü
+    height: 45, // Lottie animasyonu büyütüldü
+    marginRight: 20, // Animasyon ile metin arasındaki boşluk artırıldı
   },
   headerTitle: {
     color: '#FBEFD1',
