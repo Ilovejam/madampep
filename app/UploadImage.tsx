@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Image, Alert, SafeAreaView } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Image, Alert, SafeAreaView, Modal, Dimensions } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { Ionicons } from '@expo/vector-icons';
 import axios from 'axios';
 
-export default function UploadImage({ onSubmit, onClose }) {
+const { height } = Dimensions.get('window');
+
+export default function UploadImage({ onSubmit, onClose, visible }) {
   const [photos, setPhotos] = useState([]);
 
   const pickImage = async () => {
@@ -75,54 +77,64 @@ export default function UploadImage({ onSubmit, onClose }) {
   };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <View style={styles.container}>
-        <Text style={styles.closeText} onPress={onClose}>Kapat</Text>
-        <Text style={styles.title}>Fincan Fotoğraflarını Yükle</Text>
-        <View style={styles.photosContainer}>
-          {Array.from({ length: 3 }).map((_, index) => (
-            <View key={index} style={[styles.photoWrapper, photos[index] && styles.photoSelected]}>
-              {photos[index] ? (
-                <Image source={{ uri: photos[index].uri }} style={styles.photo} />
-              ) : (
-                <Ionicons name="camera-outline" size={40} color="#fff" />
-              )}
-            </View>
-          ))}
+    <Modal visible={visible} transparent animationType="slide">
+      <SafeAreaView style={styles.safeArea}>
+        <View style={styles.container}>
+          <Text style={styles.closeText} onPress={onClose}>Kapat</Text>
+          <Text style={styles.title}>Fincan Fotoğraflarını Yükle</Text>
+          <View style={styles.photosContainer}>
+            {Array.from({ length: 3 }).map((_, index) => (
+              <View key={index} style={[styles.photoWrapper, photos[index] && styles.photoSelected]}>
+                {photos[index] ? (
+                  <Image source={{ uri: photos[index].uri }} style={styles.photo} />
+                ) : (
+                  <Ionicons name="camera-outline" size={40} color="#555" />
+                )}
+              </View>
+            ))}
+          </View>
+          <TouchableOpacity style={styles.controlButton} onPress={pickImage}>
+            <Ionicons name="image-outline" size={40} color="#fff" />
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
+            <Text style={styles.submitButtonText}>Kahve Fotoğrafı Yükle</Text>
+          </TouchableOpacity>
         </View>
-        <TouchableOpacity style={styles.controlButton} onPress={pickImage}>
-          <Ionicons name="image-outline" size={40} color="#fff" />
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
-          <Text style={styles.submitButtonText}>Devam Et</Text>
-        </TouchableOpacity>
-      </View>
-    </SafeAreaView>
+      </SafeAreaView>
+    </Modal>
   );
 }
 
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    width: '100%',
-    backgroundColor: 'black',
-    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)', // Modal arka planını yarı saydam yapar
   },
   container: {
-    flex: 1,
-    backgroundColor: '#000',
+    width: '90%',
+    height: height / 2, // Ekranın yarısı kadar yükseklik
+    backgroundColor: 'rgba(66, 66, 66, 0.05)', // %5 opacity
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: 'rgba(205, 195, 171, 0.15)', // %15 opacity
+    borderRadius: 20,
+    padding: 20,
   },
   closeText: {
     color: 'purple',
     fontSize: 16,
     textAlign: 'left',
-    margin: 16,
+    alignSelf: 'flex-start',
   },
   title: {
     color: '#fff',
-    fontSize: 24,
+    fontSize: 18,
     fontWeight: 'bold',
     textAlign: 'center',
+    marginBottom: 10,
   },
   photosContainer: {
     flexDirection: 'row',
@@ -134,10 +146,11 @@ const styles = StyleSheet.create({
     height: 60,
     marginHorizontal: 10,
     borderWidth: 2,
-    borderColor: '#fff',
+    borderColor: '#555',
     borderRadius: 8,
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: '#222',
   },
   photoSelected: {
     borderColor: 'yellow',
@@ -152,15 +165,15 @@ const styles = StyleSheet.create({
     marginVertical: 20,
   },
   submitButton: {
-    backgroundColor: '#fff',
+    backgroundColor: 'purple',
     paddingVertical: 15,
-    marginHorizontal: 20,
+    paddingHorizontal: 50,
     borderRadius: 10,
     marginBottom: 20,
   },
   submitButtonText: {
     textAlign: 'center',
-    color: '#000',
+    color: '#fff',
     fontWeight: 'bold',
     fontSize: 16,
   },

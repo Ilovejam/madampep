@@ -2,8 +2,9 @@ import React from 'react';
 import { StyleSheet, View, Text, ImageBackground, ScrollView, TouchableOpacity, SafeAreaView } from 'react-native';
 import LottieView from 'lottie-react-native';
 import { useNavigation } from '@react-navigation/native';
-import { useLayoutEffect } from 'react'; // useLayoutEffect'i import edin
+import { useLayoutEffect } from 'react';
 import CustomHeader from '@/components/CustomHeader';
+
 export default function Dashboard() {
     const navigation = useNavigation();
 
@@ -18,8 +19,8 @@ export default function Dashboard() {
   };
 
   return (
-    <SafeAreaView style={styles.safeArea} >
-      <ImageBackground source={require('../assets/images/background.png')} style={styles.background}>
+    <ImageBackground source={require('../assets/images/background.png')} style={styles.background}>
+      <SafeAreaView style={styles.safeArea}>
         <ScrollView contentContainerStyle={styles.container}>
           <LottieView
             source={require('../assets/eye.json')}
@@ -39,37 +40,34 @@ export default function Dashboard() {
           <TouchableOpacity style={styles.cardInactive} onPress={() => handleCardPress('MelekKartları')}>
             <Text style={styles.cardTitleInactive}>Melek Kartları</Text>
           </TouchableOpacity>
-          {/* <TouchableOpacity style={styles.cardInactive} onPress={() => handleCardPress('YıldızHaritası')}>
-            <Text style={styles.cardTitleInactive}>Yıldız Haritası</Text>
-          </TouchableOpacity> */}
           <TouchableOpacity style={styles.cardInactive} onPress={() => handleCardPress('BurçYorumları')}>
             <Text style={styles.cardTitleInactive}>Burç Yorumları</Text>
           </TouchableOpacity>
         </ScrollView>
-      </ImageBackground>
-    </SafeAreaView>
+      </SafeAreaView>
+    </ImageBackground>
   );
 }
 
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: 'black', // Ekranınızın arka plan rengi
-  },
   background: {
     flex: 1,
     resizeMode: 'cover',
   },
+  safeArea: {
+    flex: 1,
+  },
   container: {
+    flex: 1,
     padding: 20,
     alignItems: 'center',
     borderColor: 'rgba(205, 195, 171, 0.15)',
   },
   eyeAnimation: {
-    width: 80,
-    height: 80,
+    width: 120,
+    height: 120,
     marginBottom: 20,
-  },
+  },  
   versionText: {
     color: '#FFFFFF',
     fontSize: 12,
@@ -84,7 +82,6 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     width: '100%',
     alignItems: 'center',
-    
   },
   cardInactive: {
     backgroundColor: 'rgba(66, 66, 66, 0.05)', 
@@ -95,7 +92,6 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     width: '100%',
     alignItems: 'center',
-    
   },
   cardTitle: {
     color: '#CDC3AB',

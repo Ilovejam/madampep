@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useLayoutEffect, useRef } from 'react';
-import { StyleSheet, Modal, View, ImageBackground, Text, TextInput, TouchableOpacity, FlatList, Keyboard, SafeAreaView, KeyboardAvoidingView, Platform, Image, Alert } from 'react-native';
+import { StyleSheet, Modal, View, ImageBackground, Text, TextInput, TouchableOpacity, FlatList, Keyboard, SafeAreaView, KeyboardAvoidingView, Platform, Image, Alert, Dimensions } from 'react-native';
 import LottieView from 'lottie-react-native';
 import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
@@ -8,6 +8,7 @@ import axios from 'axios';
 import CustomHeader from '@/components/CustomHeader';
 import * as ImagePicker from 'expo-image-picker';
 import UploadImage from './UploadImage';
+import { BlurView } from 'expo-blur';
 
 
 const zodiacSigns = {
@@ -60,6 +61,9 @@ export default function ChatScreen() {
   const [showUploadButton, setShowUploadButton] = useState(false);
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [photos, setPhotos] = useState([]);
+  const { width } = Dimensions.get('window');
+  const [loading, setLoading] = useState(false);
+  
 
   useEffect(() => {
     const keyboardDidShowListener = Keyboard.addListener('keyboardDidShow', () => {
@@ -80,6 +84,25 @@ export default function ChatScreen() {
       headerShown: false,
     });
   }, [navigation]);
+  useEffect(() => {
+    navigation.setOptions({ headerShown: false });
+  }, [navigation]);
+
+
+
+  const sendMessage = (text) => {
+    if (text.trim()) {
+      setMessages(prevMessages => {
+        const newMessages = [...prevMessages, { id: prevMessages.length + 1, text, sender: 'user' }];
+        setTimeout(() => {
+          flatListRef.current.scrollToEnd({ animated: true });
+        }, 0);
+        return newMessages;
+      });
+      setInput('');
+    }
+  };
+  
 
   useEffect(() => {
     let timeout;
@@ -118,24 +141,16 @@ export default function ChatScreen() {
     }
   }, [messages]);
 
-  const sendMessage = (text, sender = "user") => {
-    if (text.trim()) {
-      setMessages(prevMessages => [
-        ...prevMessages,
-        { id: prevMessages.length + 1, text, sender }
-      ]);
-      setInput('');
-    }
-  };
+  
 
   const sendDelayedMessages = (messages, callback) => {
     setIsBotTyping(true); // Set bot typing to true before sending messages
-  
+    
     setMessages(prevMessages => [
       ...prevMessages,
       { id: `loading-${prevMessages.length}-${Date.now()}`, text: '...', sender: 'bot' }
     ]);
-  
+    
     messages.forEach((message, index) => {
       setTimeout(() => {
         setMessages(prevMessages => [
@@ -143,6 +158,7 @@ export default function ChatScreen() {
           { id: `msg-${prevMessages.length + 1}-${Date.now()}`, text: message.text, sender: message.sender },
           { id: `loading-${index + 1}-${Date.now()}`, text: '...', sender: 'bot' }
         ]);
+        flatListRef.current.scrollToEnd({ animated: true }); // Her yeni mesajda listeyi en alta kaydır
         if (index === messages.length - 1) {
           setTimeout(() => {
             setMessages(prevMessages => prevMessages.slice(0, prevMessages.length - 1));
@@ -154,16 +170,30 @@ export default function ChatScreen() {
     });
   };
   
+  
 
   const renderMessage = ({ item }) => (
-    <View style={[styles.messageContainer, item.sender === "user" ? styles.userMessage : styles.botMessage]}>
+    <View style={[styles.messageContainer, item.sender === "user" ? styles.userMessage : styles.botMessage,
+    item.isSpecial && styles.specialMessage
+]}>
       {item.sender === "bot" && <View style={styles.circle} />}
       <View style={styles.messageBubble}>
-        <Text style={styles.messageText}>{item.text}</Text>
+        {item.text === '...' ? (
+          <LottieView
+            source={require('../assets/typing_animation.json')}
+            autoPlay
+            loop
+            style={styles.typingAnimation}
+          />
+        ) : (
+          <Text style={styles.messageText}>{item.text}</Text>
+        )}
       </View>
       {item.sender === "user" && <View style={styles.circle} />}
     </View>
   );
+  
+  
 
   const handleNameSubmit = () => {
     sendMessage(name, "user");
@@ -229,26 +259,7 @@ export default function ChatScreen() {
     sendDelayedMessages(zodiacMessages, () => setShowJobOptions(true));
   };
   
-  // const handleJobOptionSubmit = (option) => {
-  //   sendMessage(option, "user");
-  //   setUserInputs(prevInputs => [...prevInputs, { question: "Meslek", answer: option }]);
-  //   setShowJobOptions(false);
-  //   sendDelayedMessages([
-  //     { text: "Hazırız sanırım.", sender: "bot" },
-  //     { text: "Bana biraz zaman ver. Fincanına odaklanmam lazım...", sender: "bot" }
-  //   ], async () => {
-  //     try {
-  //       const response = await axios.post('https://madampep-backend.vercel.app/api/message', {
-  //         inputs: userInputs
-  //       });
-  //       console.log('Response:', response.data);  // Burada response verisini konsola yazdırıyoruz
-  //       // response.data'yı Falla ekranına geçirin
-  //       navigation.replace('Falla', { response: response.data });
-  //     } catch (error) {
-  //       console.error('Error sending data:', error);
-  //     }
-  //   });
-  // };
+  
   const handleFalForm = () => {
     sendDelayedMessages([
       { text: "Kahveler içildi ise şimdi gelelim hoş muhabbete.", sender: "bot" },
@@ -284,22 +295,6 @@ export default function ChatScreen() {
     });
   };
   
-  const handleUploadPhoto = async () => {
-    // Arka planda post işlemi başlat
-    axios.post('https://madampep-backend.vercel.app/api/message', {
-      inputs: userInputs
-    })
-    .then(response => {
-      console.log('Response:', response.data);
-    })
-    .catch(error => {
-      console.error('Error sending data:', error);
-    });
-  
-    // Popup olarak modal'ı aç
-    setShowUploadModal(true);
-  };
-  
   
   
   const pickImage = async () => {
@@ -310,7 +305,7 @@ export default function ChatScreen() {
         selectionLimit: 3,
         base64: true,
       });
-  
+
       if (!result.canceled) {
         setPhotos(result.assets.slice(0, 3));
       }
@@ -320,26 +315,13 @@ export default function ChatScreen() {
     }
   };
 
-  const handleUploadImageSubmit = () => {
-    setShowUploadModal(false);
-    setShowUploadButton(false); // Fotoğraf yüklendiğinde butonu gizle
-    sendMessage("Yükledim", "user");
-    sendDelayedMessages([
-      { text: "Hmm", sender: "bot" },
-      { text: "Güzel bir fincan.", sender: "bot" },
-      { text: "Şimdi bana biraz zaman tanı ki bu karanlık telveden aydınlık bir yol çıkartabileyim...", sender: "bot" }
-    ], () => {
-      setTimeout(() => {
-        navigation.replace('Falla');
-      }, 2000);
-    });
-  };
-  
-  const handleSubmit = async () => {
+  const handleUploadPhoto = async () => {
     if (photos.length < 1) {
       Alert.alert('Hata', 'En az bir fotoğraf yüklemelisin.');
       return;
     }
+  
+    setLoading(true); // Yükleme işlemi başladığında animasyonu göster
   
     try {
       const formData = new FormData();
@@ -356,10 +338,11 @@ export default function ChatScreen() {
       const response = await axios.post('http://35.228.6.241/api/v1/upload', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
+          'Accept': 'application/json',
         },
       });
   
-      console.log('Response:', response);
+      console.log('Response:', response.data);
   
       const { predictions } = response.data;
       const allValid = predictions.every(prediction => prediction.isCoffeeCup);
@@ -367,9 +350,32 @@ export default function ChatScreen() {
       if (!allValid) {
         Alert.alert('Hata', 'Lütfen düzgün resimler yükleyin. Tüm resimler kahve fincanı değil.');
       } else {
-        setShowUploadModal(false);
+        await axios.post('https://madampep-backend.vercel.app/api/message', {
+          inputs: userInputs
+        })
+        .then(response => {
+          console.log('Response:', response.data);
+        })
+        .catch(error => {
+          console.error('Error sending data:', error);
+        });
+  
+        setShowUploadButton(false);
         sendMessage("Yükledim", "user");
-        sendDelayedMessages([{ text: "Tamamdır", sender: "bot" }]);
+        
+        // Mesajların doğru şekilde gönderildiğini ve gösterildiğini kontrol edin
+        sendDelayedMessages([
+          { text: "Hmm", sender: "bot" },
+          { text: "Güzel bir fincan.", sender: "bot" },
+          { text: "Şimdi bana biraz zaman tanı ki bu karanlık telveden aydınlık bir yol çıkartabileyim...", sender: "bot", isSpecial: true }
+        ], () => {
+          console.log('All messages sent.');
+          setTimeout(() => {
+            setTimeout(() => {
+              navigation.replace('Falla');
+            }, 3000); // 3 saniye bekleme süresi eklendi
+          }, 3000); // 3 saniye bekleme süresi eklendi
+        });
       }
     } catch (error) {
       console.error('Error uploading images:', error);
@@ -383,66 +389,78 @@ export default function ChatScreen() {
         console.error('Error message:', error.message);
       }
       Alert.alert('Hata', `Resimleri yüklerken bir hata oluştu: ${error.message}`);
+    } finally {
+      setLoading(false); // Yükleme işlemi bittiğinde animasyonu gizle
     }
   };
   
   
+
+
+  
+  
   
   return (
-    <KeyboardAvoidingView
-      style={{ flex: 1 }}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-    >
+    <ImageBackground source={require('../assets/images/background.png')} style={styles.background}>
+
+<KeyboardAvoidingView
+  style={{ flex: 1 }}
+  behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+>
       <SafeAreaView style={styles.safeArea}>
-        <ImageBackground source={require('../assets/images/background.png')} style={styles.background}>
         <CustomHeader zodiacSign={zodiacSign} isBotTyping={isBotTyping} />
         <FlatList
-          ref={flatListRef}
-          data={messages}
-          renderItem={renderMessage}
-          keyExtractor={item => item.id.toString()} // Benzersiz key değerini kullanın
-          style={styles.messageList}
-          contentContainerStyle={styles.messageListContent}
-          onContentSizeChange={() => flatListRef.current.scrollToEnd({ animated: true })}
-          onLayout={() => flatListRef.current.scrollToEnd({ animated: true })}
-        />
+  ref={flatListRef}
+  data={messages}
+  renderItem={renderMessage}
+  keyExtractor={item => item.id.toString()}
+  style={styles.messageList}
+  contentContainerStyle={{ paddingBottom: 20 }}
+  onContentSizeChange={() => flatListRef.current.scrollToEnd({ animated: true })}
+  onLayout={() => flatListRef.current.scrollToEnd({ animated: true })}
+/>
 
-          {isBotTyping && <Text style={styles.typingIndicator}></Text>}
-          <View style={styles.fixedContainer}>
-            {step === 1 ? (
-              <View style={[styles.inputContainer, keyboardVisible && styles.inputContainerShift]}>
-                <TextInput
-                  style={styles.input}
-                  placeholder="Adınızı yazın..."
-                  placeholderTextColor="#888"
-                  value={name}
-                  onChangeText={setName}
-                  onSubmitEditing={handleNameSubmit}
-                />
-                <TouchableOpacity
-      style={[
-        styles.sendButton,
-        !name.trim() && styles.disabledButton, // Name boşsa disabledButton stilini uygula
-      ]}
-      onPress={handleNameSubmit}
-      disabled={!name.trim()}
-    >
-      <Ionicons name="send" size={24} color="#FBEFD1" />
-    </TouchableOpacity>
-          </View>
-            ) : step === 2 && !isBotTyping ? (
-              <View style={styles.genderContainer}>
-                <TouchableOpacity style={styles.genderButton} onPress={() => handleGenderSubmit("Kadın")}>
-                  <Text style={styles.buttonText}>Kadın</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.genderButton} onPress={() => handleGenderSubmit("Erkek")}>
-                  <Text style={styles.buttonText}>Erkek</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.genderButton} onPress={() => handleGenderSubmit("Bunların dışında bir tanım")}>
-                  <Text style={styles.buttonText}>Bunların dışında bir tanım</Text>
-                </TouchableOpacity>
-              </View>
-            ) : null}
+
+
+
+
+
+{isBotTyping && <Text style={styles.typingIndicator}></Text>}
+    <View style={styles.fixedContainer}>
+      {step === 1 ? (
+        <View style={[styles.inputContainer, keyboardVisible && styles.inputContainerShift]}>
+          <TextInput
+            style={styles.input}
+            placeholder="Adınızı yazın..."
+            placeholderTextColor="#888"
+            value={name}
+            onChangeText={setName}
+            onSubmitEditing={handleNameSubmit}
+                      />
+          <TouchableOpacity
+            style={[
+              styles.sendButton,
+              !name.trim() && styles.disabledButton, // Name boşsa disabledButton stilini uygula
+            ]}
+            onPress={handleNameSubmit}
+            disabled={!name.trim()}
+          >
+            <Ionicons name="send" size={24} color="#FBEFD1" />
+          </TouchableOpacity>
+        </View>
+      ) : step === 2 && !isBotTyping ? (
+        <View style={styles.genderContainer}>
+          <TouchableOpacity style={styles.genderButton} onPress={() => handleGenderSubmit("Kadın")}>
+            <Text style={styles.buttonText}>Kadın</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.genderButton} onPress={() => handleGenderSubmit("Erkek")}>
+            <Text style={styles.buttonText}>Erkek</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.genderButton} onPress={() => handleGenderSubmit("Bunların dışında bir tanım")}>
+            <Text style={styles.buttonText}>Bunların dışında bir tanım</Text>
+          </TouchableOpacity>
+        </View>
+      ) : null}
             {showDatePicker && (
               <>
                 <View style={styles.datePickerContainer}>
@@ -493,54 +511,162 @@ export default function ChatScreen() {
                 </TouchableOpacity>
               </View>
             )}
-           {showUploadButton && (
-              <View style={styles.genderContainer}>
-                <TouchableOpacity style={styles.genderButton} onPress={handleUploadPhoto}>
-                  <Text style={styles.buttonText}>Kahve Fotoğrafı Yükle</Text>
-                </TouchableOpacity>
+         {showUploadButton && (
+            <View style={styles.uploadContainer}>
+              <Text style={styles.uploadtitle}>Fincan fotoğraflarını yükle.</Text>
+              <View style={styles.photoContainer}>
+                {Array.from({ length: 3 }).map((_, index) => (
+                  <View key={index} style={[styles.photoWrapper, photos[index] && styles.photoSelected]}>
+                    <TouchableOpacity style={styles.photoButton} onPress={pickImage}>
+                      {photos[index] ? (
+                        <Image source={{ uri: photos[index].uri }} style={styles.photo} />
+                      ) : (
+                        <Ionicons name="camera-outline" size={30} color="#CDC3AB" />
+                      )}
+                    </TouchableOpacity>
+                  </View>
+                ))}
               </View>
+              <Text style={styles.subtitle}>En az bir fotoğraf yüklemelisin.</Text>
+              <TouchableOpacity
+                style={[styles.uploadButton, { backgroundColor: photos.length < 1 ? '#aaa' : '#7D3C98' }]}
+                onPress={handleUploadPhoto}
+                disabled={photos.length < 1}
+              >
+                <Text style={styles.buttonText}>Kahve Fotoğrafı Yükle</Text>
+              </TouchableOpacity>
+            </View>
           )}
-         <Modal
-  animationType="slide"
-  transparent={true}
-  visible={showUploadModal}
-  onRequestClose={() => setShowUploadModal(false)}
->
-  <View style={styles.centeredView}>
-    <ImageBackground source={require('../assets/images/background.png')} style={styles.background}>
-      <View style={[styles.modalView, { width: '90%', height: '80%' }]}>
-        <UploadImage
-          onSubmit={handleUploadImageSubmit}
-          onClose={() => setShowUploadModal(false)}
-        />
-      </View>
-    </ImageBackground>
-  </View>
-</Modal>
+          {loading && (
+            <BlurView intensity={50} style={styles.loadingOverlay}>
+              <LottieView
+                source={require('../assets/loading.json')} // Loading animasyon dosyasının yolu
+                autoPlay
+                loop
+                style={styles.loadingAnimation}
+              />
+              <Text style={styles.loadingText}>Resimleriniz yükleniyor, lütfen bekleyin...</Text>
+            </BlurView>
+          )}
+
+
+
 
           </View>
-        </ImageBackground>
       </SafeAreaView>
     </KeyboardAvoidingView>
+    </ImageBackground>
+
   );
 }
 
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: 'black',
   },
   background: {
     flex: 1,
     resizeMode: 'cover',
+  },loadingOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
   },
+  loadingAnimation: {
+    width: 100,
+    height: 100,
+  },
+  specialMessage: {
+    marginBottom: 30, // Özel mesafeyi burada ayarlayın
+  },
+
+  loadingText: {
+    marginTop: 20,
+    color: '#CDC3AB',
+    fontSize: 16,
+    textAlign: 'center',
+    fontFamily:'DavidLibre'
+  },
+  typingAnimation: {
+    width: 40,
+    height: 40,
+  },
+
+
+  uploadContainer: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: '90%',
+    backgroundColor: 'rgba(66, 66, 66, 0.05)',
+    borderRadius: 20,
+    padding: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(205, 195, 171, 0.15)',
+    alignSelf: 'center',
+    marginBottom: 20,
+  },
+  uploadtitle: {
+    color: '#CDC3AB',
+    fontSize: 18,
+    fontWeight: 'bold',
+    textAlign: 'center',
+    marginBottom: 10,
+  },
+  photoContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    width: '100%',
+    marginBottom: 10,
+  },
+  photoWrapper: {
+    flex: 1,
+    aspectRatio: 1,
+    marginHorizontal: 5,
+  },
+  photoButton: {
+    backgroundColor: 'rgba(205, 195, 171, 0.05)',
+    borderRadius: 10,
+    width: '100%',
+    height: '100%',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(205, 195, 171, 0.25)',
+  },
+  photo: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 8,
+  },
+  photoSelected: {
+    borderColor: 'yellow',
+  },
+  subtitle: {
+    color: '#CDC3AB',
+    fontSize: 14,
+    textAlign: 'center',
+    marginBottom: 20,
+  },
+  uploadButton: {
+    borderRadius: 15,
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    width: '80%',
+  },
+  buttonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    textAlign: 'center',
+    fontFamily: 'DavidLibre',
+  },
+
   messageList: {
     flex: 1,
     width: '100%',
   },
-  messageListContent: {
-    padding: 10,
-  },
+
+  
   messageContainer: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -564,15 +690,20 @@ const styles = StyleSheet.create({
     padding: 10,
     borderRadius: 20,
     backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    justifyContent: 'center', // Ortalamak için
+    alignItems: 'center', // Ortalamak için
+    minHeight: 40,
   },
   messageText: {
     color: '#FBEFD1',
     fontSize: 18,
-    fontFamily: 'DavidLibre'
+    fontFamily: 'DavidLibre',
   },
+
   fixedContainer: {
     width: '100%',
-  },
+      },
+      
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -581,7 +712,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 5,
     marginHorizontal: 10,
-    marginBottom: 10,
+marginBottom: 10,
   },
   input: {
     flex: 1,
@@ -790,12 +921,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     fontSize: 16,
   },
-  centeredView: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginTop: 22,
-  },
+  
   modalView: {
     margin: 20,
     backgroundColor: 'black',

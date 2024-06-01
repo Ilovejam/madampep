@@ -65,7 +65,6 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'black',
     paddingHorizontal: 10,
     paddingVertical: 15,
     width: width, // Cihaz genişliğini ayarlamak için

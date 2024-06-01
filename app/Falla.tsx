@@ -84,22 +84,20 @@ export default function Falla() {
             loop
             style={styles.sandTimer}
           />
-        <View style={styles.timerContainer}>
-          <Text style={styles.timerText}>00:{formatTime(timer)}</Text>
-        </View>
+          <View style={styles.timerContainer}>
+            <Text style={styles.timerText}>00:{formatTime(timer)}</Text>
+          </View>
           <View style={styles.speedUpContainer}>
-  <Text style={styles.speedUpTitle}>Hızlandır</Text>
-  <View style={styles.speedUpButtons}>
-    <TouchableOpacity style={styles.speedUpButton} onPress={handleSpeedUpPress}>
-      <Image source={require('../assets/images/videola.png')} style={styles.buttonImage} />
-     </TouchableOpacity>
-    <TouchableOpacity style={styles.speedUpButton} onPress={handleLokumlaPress}>
-      <Image source={require('../assets/images/lokumla.png')} style={styles.buttonImage} />
-     </TouchableOpacity>
-  </View>
-</View>
-
-
+            <Text style={styles.speedUpTitle}>Hızlandır</Text>
+            <View style={styles.speedUpButtons}>
+              <TouchableOpacity style={styles.speedUpButton} onPress={handleSpeedUpPress}>
+                <Image source={require('../assets/images/videola.png')} style={styles.buttonImage} />
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.speedUpButton} onPress={handleLokumlaPress}>
+                <Image source={require('../assets/images/lokumla.png')} style={styles.buttonImage} />
+              </TouchableOpacity>
+            </View>
+          </View>
         </View>
 
         <Modal
@@ -111,9 +109,12 @@ export default function Falla() {
           }}
         >
           <TouchableOpacity style={styles.modalOverlay} onPress={handleModalPress}>
-            <BlurView intensity={10} style={styles.blurView}>
-              <Image source={require('../assets/Paywall.png')} style={styles.paywallImage} />
-            </BlurView>
+          <BlurView intensity={10} style={styles.blurView}>
+  <View style={styles.overlay}>
+    <Image source={require('../assets/images/paywall.png')} style={styles.paywallImage} />
+  </View>
+</BlurView>
+
           </TouchableOpacity>
         </Modal>
       </ImageBackground>
@@ -156,7 +157,6 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(66, 66, 66, 0.05)', // Arka plan rengi %5 opacity
     alignItems: 'center', // İçeriği ortalamak için
   },
-
   modalOverlay: {
     flex: 1,
     justifyContent: 'center',
@@ -169,8 +169,16 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  overlay: {
+    ...StyleSheet.absoluteFillObject, // Bu stil View'un tüm alanı kaplamasını sağlar
+    backgroundColor: 'rgba(0, 0, 0, 0.8)', // Siyahımsı arka plan
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  
+
   paywallImage: {
-    width: '100%',
+    width: '90%',
     height: '70%',
     resizeMode: 'contain',
     marginBottom: -290,
@@ -186,7 +194,7 @@ const styles = StyleSheet.create({
   },
   speedUpTitle: {
     color: '#CDC3AB',
-    fontSize: 25,
+    fontSize: 30, // Font boyutu büyütüldü
     marginBottom: 10,
     textAlign: 'center',
     fontFamily: 'DavidLibre', // Belirttiğiniz font
@@ -198,21 +206,18 @@ const styles = StyleSheet.create({
   },
   speedUpButton: {
     alignItems: 'center',
-    marginHorizontal: 20, // Ortak mesafe için artırıldı
+    marginHorizontal: 30, // Ortak mesafe artırıldı
   },
   buttonImage: {
-    width: 90, // Butonları biraz daha büyütmek için genişlik artırıldı
-    height: 90, // Butonları biraz daha büyütmek için yükseklik artırıldı
+    width: 110, // Butonlar büyütüldü
+    height: 110, // Butonlar büyütüldü
     resizeMode: 'contain',
   },
-
   buttonText: {
     color: 'white',
-    fontSize: 14,
+    fontSize: 18, // Font boyutu büyütüldü
     marginTop: 5,
     textAlign: 'center',
     fontFamily: 'DavidLibre', // Belirttiğiniz font
   },
-
-
 });
