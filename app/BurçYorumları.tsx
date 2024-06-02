@@ -13,7 +13,7 @@ export default function BurçYorumları() {
     { id: '5', text: 'Hazır olduğumda sana haber vericem…' },
   ];
 
-  const [messages, setMessages] = useState([{ id: '0', text: '...' }]);
+  const [messages, setMessages] = useState([{ id: '0', text: '...', isTyping: true }]);
   const navigation = useNavigation();
 
   useLayoutEffect(() => {
@@ -30,7 +30,7 @@ export default function BurçYorumları() {
           setMessages((prevMessages) => [
             ...prevMessages.slice(0, prevMessages.length - 1),
             allMessages[index],
-            { id: `loading-${index + 1}`, text: '...' },
+            { id: `loading-${index + 1}`, text: '...', isTyping: true },
           ]);
           addMessages(index + 1);
         }, 2000);
@@ -44,15 +44,30 @@ export default function BurçYorumları() {
     return () => clearTimeout(timeout);
   }, []);
 
+
   const renderMessage = ({ item }) => (
-    <View style={styles.messageBubble}>
-      <Text style={styles.messageText}>{item.text}</Text>
+    <View style={[styles.messageContainer, item.isTyping ? styles.typingBubbleContainer : styles.messageBubbleContainer]}>
+      <View style={[styles.messageBubble, item.isTyping && styles.typingBubble]}>
+        {item.isTyping ? (
+          <LottieView
+            source={require('../assets/typing_animation.json')}
+            autoPlay
+            loop
+            style={styles.typingAnimation}
+          />
+        ) : (
+          <Text style={styles.messageText}>{item.text}</Text>
+        )}
+      </View>
     </View>
   );
+  
+  
 
   return (
+    <ImageBackground source={require('../assets/images/background.png')} style={styles.background}>
+
     <SafeAreaView style={styles.safeArea}>
-      <ImageBackground source={require('../assets/images/background.png')} style={styles.background}>
         <CustomHeader />
         <FlatList
           data={messages}
@@ -69,41 +84,19 @@ export default function BurçYorumları() {
             style={styles.sandTimer}
           />
         </View>
-      </ImageBackground>
     </SafeAreaView>
+    </ImageBackground>
+
   );
 }
 
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: 'black', // Ekranınızın arka plan rengi
   },
   background: {
     flex: 1,
     resizeMode: 'cover',
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: 10,
-  },
-  title: {
-    color: '#FBEFD1',
-    fontSize: 20,
-    fontFamily: 'DavidLibre-Regular',
-    marginHorizontal: 10,
-  },
-  headerIcons: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  versionText: {
-    color: '#FFFFFF',
-    fontSize: 12,
-    textAlign: 'center',
-    marginBottom: 10,
   },
   messageList: {
     flex: 1,
@@ -112,16 +105,44 @@ const styles = StyleSheet.create({
   messageListContent: {
     padding: 10,
   },
-  messageBubble: {
-    maxWidth: '75%',
-    padding: 10,
-    borderRadius: 20,
-    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+  messageContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
     marginVertical: 5,
   },
+  messageBubbleContainer: {
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    padding: 10,
+    borderRadius: 20,
+    minHeight: 40,
+    alignSelf: 'flex-start',
+  },
+  typingBubbleContainer: {
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    padding: 10,
+    borderRadius: 20,
+    minHeight: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginLeft: 10,
+    alignSelf: 'flex-start',
+  },
+  messageBubble: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  typingBubble: {
+    padding: 5, // Ekstra küçük boyut için padding ekleyin
+  },
+
   messageText: {
-    color: 'white',
-    fontSize: 16,
+    color: '#FBEFD1',
+    fontSize: 18,
+    fontFamily: 'DavidLibre',
+  },
+  typingAnimation: {
+    width: 40,
+    height: 40,
   },
   sandTimerContainer: {
     justifyContent: 'center',
