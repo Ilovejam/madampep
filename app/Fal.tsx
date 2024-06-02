@@ -4,6 +4,7 @@ import LottieView from 'lottie-react-native';
 import { useNavigation } from '@react-navigation/native';
 import CustomHeader from '@/components/CustomHeader';
 import axios from 'axios';
+import { GiftedChat, Bubble, InputToolbar } from 'react-native-gifted-chat';
 
 export default function Fal() {
   const [messages, setMessages] = useState([]);
@@ -15,6 +16,7 @@ export default function Fal() {
   const [zodiacSign, setZodiacSign] = useState('Avatar');
   const [keyboardHeight, setKeyboardHeight] = useState(0);
   const [isLoadingMessages, setIsLoadingMessages] = useState(true); // Yeni durum ekleyin
+  const [keyboardVisible, setKeyboardVisible] = useState(false);
 
   useLayoutEffect(() => {
     navigation.setOptions({
@@ -79,17 +81,11 @@ export default function Fal() {
   }, [messages]);
   
   useEffect(() => {
-    const keyboardDidShowListener = Keyboard.addListener('keyboardDidShow', (e) => {
-      setKeyboardHeight(e.endCoordinates.height);
-      if (flatListRef.current) {
-        flatListRef.current.scrollToEnd({ animated: true });
-      }
+    const keyboardDidShowListener = Keyboard.addListener('keyboardDidShow', () => {
+      setKeyboardVisible(true);
     });
     const keyboardDidHideListener = Keyboard.addListener('keyboardDidHide', () => {
-      setKeyboardHeight(0);
-      if (flatListRef.current) {
-        flatListRef.current.scrollToEnd({ animated: true });
-      }
+      setKeyboardVisible(false);
     });
   
     return () => {
@@ -97,6 +93,7 @@ export default function Fal() {
       keyboardDidShowListener.remove();
     };
   }, []);
+  
   
   const sendMessage = async (text) => {
     if (text.trim()) {
@@ -146,50 +143,52 @@ export default function Fal() {
       {item.sender === "user" && <View style={styles.circle} />}
     </View>
   );
+
   
   return (
     <ImageBackground source={require('../assets/images/background.png')} style={styles.background}>
-      <KeyboardAvoidingView
-        style={{ flex: 1 }}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      >
+     <KeyboardAvoidingView
+  style={{ flex: 1 }}
+  behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+>
+
+
         <SafeAreaView style={styles.safeArea}>
           <CustomHeader isBotTyping={isBotTyping} />
           <View style={{ flex: 1 }}>
-  <FlatList
-    ref={flatListRef}
-    data={messages}
-    renderItem={renderMessage}
-    keyExtractor={item => item.id.toString()}
-    style={styles.messageList}
-    contentContainerStyle={{ paddingBottom: keyboardHeight + 20 }}
-    onContentSizeChange={() => flatListRef.current.scrollToEnd({ animated: true })}
-    onLayout={() => flatListRef.current.scrollToEnd({ animated: true })}
-  />
-  {!showInput && (
-    <TouchableOpacity 
-      onPress={() => setShowInput(true)}  // `true` olarak değiştirildi
-      style={styles.paywallContainer}
-      disabled={isLoadingMessages} // Mesajlar yüklenirken buton devre dışı
-    >
-      <Image source={require('../assets/images/lokumikramet.png')} style={styles.paywallImage} />
-    </TouchableOpacity>
-  )}
-  {showInput && (
-    <View style={[styles.inputContainer, { marginBottom: keyboardHeight }]}>
-      <TextInput
-        style={styles.input}
-        placeholder="Mesajınızı yazın..."
-        placeholderTextColor="#888"
-        value={input}
-        onChangeText={setInput}
-        onSubmitEditing={() => sendMessage(input)}
-      />
-      <TouchableOpacity style={styles.sendButton} onPress={() => sendMessage(input)}>
-        <Text style={styles.sendButtonText}>Gönder</Text>
-      </TouchableOpacity>
-    </View>
-  )}
+          <FlatList
+            ref={flatListRef}
+            data={messages}
+            renderItem={renderMessage}
+            keyExtractor={item => item.id}
+            style={styles.messageList}
+            contentContainerStyle={styles.messageListContent}
+          />
+
+{!showInput && (
+  <TouchableOpacity 
+    onPress={() => setShowInput(true)} 
+    style={styles.paywallContainer}
+    disabled={isLoadingMessages}
+  >
+    <Image source={require('../assets/images/lokumikramet.png')} style={styles.paywallImage} />
+  </TouchableOpacity>
+)}
+{showInput && (
+ <View style={styles.inputContainer}>
+ <TextInput
+   style={styles.input}
+   placeholder="Mesajınızı yazın..."
+   placeholderTextColor="#888"
+   value={input}
+   onChangeText={setInput}
+   onSubmitEditing={() => sendMessage(input)}
+ />
+ <TouchableOpacity style={styles.sendButton} onPress={() => sendMessage(input)}>
+   <Text style={styles.sendButtonText}>Gönder</Text>
+ </TouchableOpacity>
+</View>
+)}
 </View>
 
 
@@ -355,8 +354,9 @@ paywallImage: {
   sendButtonText: {
     color: 'white',
     fontSize: 16,
-    fontFamily: 'DavidLibre',
+    fontFamily: 'DavidLibre'
   },
+
   paywallImageContainer: {
     justifyContent: 'center',
     alignItems: 'center',
