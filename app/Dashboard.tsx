@@ -2,17 +2,18 @@ import React from 'react';
 import { StyleSheet, View, Text, ImageBackground, ScrollView, TouchableOpacity, SafeAreaView } from 'react-native';
 import LottieView from 'lottie-react-native';
 import { useNavigation } from '@react-navigation/native';
-import { useLayoutEffect } from 'react';
+import { useLayoutEffect, useState } from 'react';
 import CustomHeader from '@/components/CustomHeader';
 
 export default function Dashboard() {
-    const navigation = useNavigation();
+  const navigation = useNavigation();
+  const [zodiacSign, setZodiacSign] = useState('Avatar');
 
-    useLayoutEffect(() => {
-      navigation.setOptions({
-        headerShown: false,
-      });
-    }, [navigation]);
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      headerShown: false,
+    });
+  }, [navigation]);
 
   const handleCardPress = (screen) => {
     navigation.navigate(screen);
@@ -21,6 +22,7 @@ export default function Dashboard() {
   return (
     <ImageBackground source={require('../assets/images/background.png')} style={styles.background}>
       <SafeAreaView style={styles.safeArea}>
+        <CustomHeader showFrame={true} showBackButton={false} />
         <ScrollView contentContainerStyle={styles.container}>
           <LottieView
             source={require('../assets/eye.json')}

@@ -2,7 +2,7 @@
   "expo": {
     "name": "MadamPep",
     "slug": "MadamPep",
-    "version": "1.0.8",
+    "version": "1.0.9",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "myapp",
@@ -36,7 +36,7 @@
       },
       "package": "com.madampep.android",
       "config": {
-        "googleMobileAdsAppId": "ca-app-pub-3940256099942544~3347511713" 
+        "googleMobileAdsAppId": "ca-app-pub-3940256099942544~3347511713"
       }
     },
     "web": {
@@ -45,7 +45,8 @@
       "favicon": "./assets/images/favicon.png"
     },
     "plugins": [
-      "expo-router"
+      "expo-router",
+      "expo-secure-store"
     ],
     "experiments": {
       "typedRoutes": true

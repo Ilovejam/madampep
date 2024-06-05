@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useRef, useLayoutEffect } from 'react';
 import { StyleSheet, View, Text, ImageBackground, FlatList, TextInput, TouchableOpacity, Keyboard, SafeAreaView, KeyboardAvoidingView, Platform, Image } from 'react-native';
 import LottieView from 'lottie-react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import CustomHeader from '@/components/CustomHeader';
 import axios from 'axios';
-import { GiftedChat, Bubble, InputToolbar } from 'react-native-gifted-chat';
+import * as SecureStore from 'expo-secure-store';
+import { v4 as uuidv4 } from 'uuid';
 
 export default function Fal() {
   const [messages, setMessages] = useState([]);
@@ -12,11 +13,13 @@ export default function Fal() {
   const [showInput, setShowInput] = useState(false);
   const flatListRef = useRef(null);
   const navigation = useNavigation();
+  const route = useRoute();
   const [isBotTyping, setIsBotTyping] = useState(false);
   const [zodiacSign, setZodiacSign] = useState('Avatar');
   const [keyboardHeight, setKeyboardHeight] = useState(0);
-  const [isLoadingMessages, setIsLoadingMessages] = useState(true); // Yeni durum ekleyin
+  const [isLoadingMessages, setIsLoadingMessages] = useState(true);
   const [keyboardVisible, setKeyboardVisible] = useState(false);
+  const [deviceId, setDeviceId] = useState(route.params?.deviceId || null);
 
   useLayoutEffect(() => {
     navigation.setOptions({
@@ -25,9 +28,36 @@ export default function Fal() {
   }, [navigation]);
 
   useEffect(() => {
-    axios.get('https://madampep-backend.vercel.app/api/ai-response')
+    const getDeviceId = async () => {
+      try {
+        let id = await SecureStore.getItemAsync('deviceId');
+        if (!id) {
+          id = uuidv4();
+          await SecureStore.setItemAsync('deviceId', id);
+        }
+        setDeviceId(id);
+        console.log('Device ID:', id);
+      } catch (error) {
+        console.error('Error getting or setting device ID', error);
+      }
+    };
+
+    if (!deviceId) {
+      getDeviceId();
+    }
+  }, [deviceId]);
+
+  useEffect(() => {
+    if (deviceId) {
+      // Typing animation başlasın
+      setIsBotTyping(true);
+  
+      axios.get('https://madampep-backend.vercel.app/api/ai-response', {
+        params: { deviceId }
+      })
       .then(response => {
         const aiMessage = response.data.message;
+        console.log('AI Response:', aiMessage); // Log AI response
         const messageParagraphs = aiMessage.split('\n').filter(paragraph => paragraph.trim() !== '');
         const formattedMessages = messageParagraphs.map((paragraph, index) => ({
           id: `ai-${index}-${Date.now()}`,
@@ -40,16 +70,18 @@ export default function Fal() {
       .catch(error => {
         console.error('Error fetching AI response:', error);
       });
-  }, []);
+    }
+  }, [deviceId]);
   
-  
-  
+
   const showMessagesSequentially = (messages) => {
-    setIsBotTyping(true);
     messages.forEach((message, index) => {
       setTimeout(() => {
         setMessages(prevMessages => {
-          const updatedMessages = [...prevMessages, { ...message, isTyping: true }];
+          const updatedMessages = [
+            ...prevMessages, 
+            { ...message, isTyping: true }
+          ];
           if (flatListRef.current) {
             flatListRef.current.scrollToEnd({ animated: true });
           }
@@ -57,7 +89,9 @@ export default function Fal() {
         });
         setTimeout(() => {
           setMessages(prevMessages => {
-            const updatedMessages = prevMessages.map(m => m.id === message.id ? { ...m, isTyping: false } : m);
+            const updatedMessages = prevMessages.map(m => 
+              m.id === message.id ? { ...m, isTyping: false } : m
+            );
             if (flatListRef.current) {
               flatListRef.current.scrollToEnd({ animated: true });
             }
@@ -65,35 +99,38 @@ export default function Fal() {
           });
           if (index === messages.length - 1) {
             setIsBotTyping(false);
-            setIsLoadingMessages(false); // Mesajlar yüklendiğinde güncelleyin
+            setIsLoadingMessages(false);
           }
         }, 2000);
       }, index * 4000);
     });
   };
   
-  
-  
+
   useEffect(() => {
     if (flatListRef.current) {
       flatListRef.current.scrollToEnd({ animated: true });
     }
   }, [messages]);
-  
+
   useEffect(() => {
-    const keyboardDidShowListener = Keyboard.addListener('keyboardDidShow', () => {
+    const keyboardDidShowListener = Keyboard.addListener('keyboardDidShow', (e) => {
+      setKeyboardHeight(e.endCoordinates.height);
       setKeyboardVisible(true);
+      if (flatListRef.current) {
+        flatListRef.current.scrollToEnd({ animated: true });
+      }
     });
     const keyboardDidHideListener = Keyboard.addListener('keyboardDidHide', () => {
+      setKeyboardHeight(0);
       setKeyboardVisible(false);
     });
-  
+
     return () => {
       keyboardDidHideListener.remove();
       keyboardDidShowListener.remove();
     };
   }, []);
-  
   
   const sendMessage = async (text) => {
     if (text.trim()) {
@@ -104,9 +141,11 @@ export default function Fal() {
   
       try {
         const response = await axios.post('https://madampep-backend.vercel.app/api/short-message', {
+          deviceId,
           inputs: [{ question: 'Kullanıcı Mesajı', answer: text }]
         });
         const aiMessage = response.data.message;
+        console.log('AI Response:', aiMessage); // Log AI response
         const messageParagraphs = aiMessage.split('\n').filter(paragraph => paragraph.trim() !== '');
         const formattedMessages = messageParagraphs.map((paragraph, index) => ({
           id: `ai-${index + userMessage.id}-${Date.now()}`,
@@ -120,7 +159,7 @@ export default function Fal() {
       }
     }
   };
-  
+
   const renderMessage = ({ item }) => (
     <View style={[
       styles.messageContainer, 
@@ -128,7 +167,7 @@ export default function Fal() {
       item.isSpecial && styles.specialMessage
     ]}>
       {item.sender === "bot" && <View style={styles.circle} />}
-      <View style={[styles.messageBubble, item.text === '...' && styles.typingAnimation]}>
+      <View style={[styles.messageBubble, item.isTyping && styles.typingAnimation]}>
         {item.isTyping ? (
           <LottieView
             source={require('../assets/typing_animation.json')}
@@ -144,59 +183,54 @@ export default function Fal() {
     </View>
   );
 
-  
   return (
     <ImageBackground source={require('../assets/images/background.png')} style={styles.background}>
      <KeyboardAvoidingView
-  style={{ flex: 1 }}
-  behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
->
-
-
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      >
         <SafeAreaView style={styles.safeArea}>
           <CustomHeader isBotTyping={isBotTyping} />
           <View style={{ flex: 1 }}>
-          <FlatList
-            ref={flatListRef}
-            data={messages}
-            renderItem={renderMessage}
-            keyExtractor={item => item.id}
-            style={styles.messageList}
-            contentContainerStyle={styles.messageListContent}
-          />
-
-{!showInput && (
-  <TouchableOpacity 
-    onPress={() => setShowInput(true)} 
-    style={styles.paywallContainer}
-    disabled={isLoadingMessages}
-  >
-    <Image source={require('../assets/images/lokumikramet.png')} style={styles.paywallImage} />
-  </TouchableOpacity>
-)}
-{showInput && (
- <View style={styles.inputContainer}>
- <TextInput
-   style={styles.input}
-   placeholder="Mesajınızı yazın..."
-   placeholderTextColor="#888"
-   value={input}
-   onChangeText={setInput}
-   onSubmitEditing={() => sendMessage(input)}
- />
- <TouchableOpacity style={styles.sendButton} onPress={() => sendMessage(input)}>
-   <Text style={styles.sendButtonText}>Gönder</Text>
- </TouchableOpacity>
-</View>
-)}
-</View>
-
-
+            <FlatList
+              ref={flatListRef}
+              data={messages}
+              renderItem={renderMessage}
+              keyExtractor={item => item.id}
+              style={styles.messageList}
+              contentContainerStyle={[styles.messageListContent, { paddingBottom: keyboardHeight }]}
+            />
+            {!showInput && (
+              <TouchableOpacity 
+                onPress={() => setShowInput(true)} 
+                style={styles.paywallContainer}
+                disabled={isLoadingMessages}
+              >
+                <Image source={require('../assets/images/lokumikramet.png')} style={styles.paywallImage} />
+              </TouchableOpacity>
+            )}
+            {showInput && (
+              <View style={styles.inputContainer}>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Mesajınızı yazın..."
+                  placeholderTextColor="#888"
+                  value={input}
+                  onChangeText={setInput}
+                  onSubmitEditing={() => sendMessage(input)}
+                />
+                <TouchableOpacity style={styles.sendButton} onPress={() => sendMessage(input)}>
+                  <Text style={styles.sendButtonText}>Gönder</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+          </View>
         </SafeAreaView>
       </KeyboardAvoidingView>
     </ImageBackground>
   );
 }
+
 
 const styles = StyleSheet.create({
   safeArea: {
@@ -361,10 +395,6 @@ paywallImage: {
     justifyContent: 'center',
     alignItems: 'center',
   },
-  paywallImage: {
-    width: '80%',
-    height: '80%',
-    resizeMode: 'contain',
-  },
+  
 });
 

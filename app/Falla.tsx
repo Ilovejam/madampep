@@ -6,6 +6,7 @@ import { useLayoutEffect } from 'react';
 import CustomHeader from '../components/CustomHeader';
 import LottieView from 'lottie-react-native';
 import { BlurView } from 'expo-blur';
+import * as SecureStore from 'expo-secure-store';
 
 export default function Falla() {
   const animatedValue = useRef(new Animated.Value(0)).current;
@@ -13,7 +14,8 @@ export default function Falla() {
   const [modalVisible, setModalVisible] = useState(false);
   const router = useRouter();
   const navigation = useNavigation();
-  
+  const [deviceId, setDeviceId] = useState(null);
+
   useLayoutEffect(() => {
     navigation.setOptions({
       headerShown: false,
@@ -21,11 +23,29 @@ export default function Falla() {
   }, [navigation]);
 
   useEffect(() => {
+    const getDeviceId = async () => {
+      try {
+        let id = await SecureStore.getItemAsync('deviceId');
+        if (!id) {
+          id = uuidv4();
+          await SecureStore.setItemAsync('deviceId', id);
+        }
+        setDeviceId(id);
+        console.log('Device ID:', id); // Device ID'yi konsolda görmek için
+      } catch (error) {
+        console.error('Error getting or setting device ID', error);
+      }
+    };
+
+    getDeviceId();
+  }, []);
+
+  useEffect(() => {
     const interval = setInterval(() => {
       setTimer(prevTimer => {
         if (prevTimer <= 1) {
           clearInterval(interval);
-          router.push('/Fal'); // Süre bitince Fal ekranına yönlendir
+          router.push({ pathname: '/Fal', params: { deviceId } }); // Süre bitince Fal ekranına yönlendir
           return 0;
         }
         return prevTimer - 1;
@@ -33,7 +53,7 @@ export default function Falla() {
     }, 1000);
 
     return () => clearInterval(interval); // Cleanup on unmount
-  }, [router]);
+  }, [router, deviceId]);
 
   useEffect(() => {
     Animated.loop(
@@ -70,7 +90,7 @@ export default function Falla() {
 
   const handleModalPress = () => {
     setModalVisible(false);
-    router.push('/Fal');
+    router.push({ pathname: '/Fal', params: { deviceId } });
   };
 
   return (
@@ -109,18 +129,19 @@ export default function Falla() {
           }}
         >
           <TouchableOpacity style={styles.modalOverlay} onPress={handleModalPress}>
-          <BlurView intensity={10} style={styles.blurView}>
-  <View style={styles.overlay}>
-    <Image source={require('../assets/images/paywall.png')} style={styles.paywallImage} />
-  </View>
-</BlurView>
-
+            <BlurView intensity={10} style={styles.blurView}>
+              <View style={styles.overlay}>
+                <Image source={require('../assets/images/paywall.png')} style={styles.paywallImage} />
+              </View>
+            </BlurView>
           </TouchableOpacity>
         </Modal>
       </ImageBackground>
     </SafeAreaView>
   );
 }
+
+
 
 const styles = StyleSheet.create({
   safeArea: {

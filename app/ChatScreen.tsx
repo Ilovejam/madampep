@@ -9,7 +9,10 @@ import CustomHeader from '@/components/CustomHeader';
 import * as ImagePicker from 'expo-image-picker';
 import UploadImage from './UploadImage';
 import { BlurView } from 'expo-blur';
-
+import Constants from 'expo-constants';
+import * as SecureStore from 'expo-secure-store';
+import { v4 as uuidv4 } from 'uuid';
+import 'react-native-get-random-values'; 
 
 const zodiacSigns = {
   'Oğlak': 'capricorn',
@@ -63,7 +66,28 @@ export default function ChatScreen() {
   const [photos, setPhotos] = useState([]);
   const { width } = Dimensions.get('window');
   const [loading, setLoading] = useState(false);
-  
+  const [falSebebi, setFalSebebi] = useState('');
+  const [showFalSebebiInput, setShowFalSebebiInput] = useState(false);
+  const [deviceId, setDeviceId] = useState('');
+
+  useEffect(() => {
+    const getDeviceId = async () => {
+      try {
+        let id = await SecureStore.getItemAsync('deviceId');
+        if (!id) {
+          id = uuidv4();
+          await SecureStore.setItemAsync('deviceId', id);
+        }
+        setDeviceId(id);
+        console.log('Device ID:', id); // Device ID'yi konsolda görmek için
+      } catch (error) {
+        console.error('Error getting or setting device ID', error);
+      }
+    };
+
+    getDeviceId();
+  }, []);
+
 
   useEffect(() => {
     const keyboardDidShowListener = Keyboard.addListener('keyboardDidShow', () => {
@@ -289,11 +313,22 @@ export default function ChatScreen() {
       { text: "Tanışma faslımızın sonuna geldik.", sender: "bot" }
     ], () => {
       sendDelayedMessages([
-        { text: "Kahveler içildi ise şimdi gelelim hoş muhabbete.", sender: "bot" },
-        { text: "Kahve fincanını benimle paylaş ki, o karanlık telvelerden aydınlık bir yol bulabileyim.", sender: "bot" }
-      ], () => setShowUploadButton(true));
+        { text: "Geldik son ve en önemli soruya", sender: "bot" },
+        { text: "Bu kahveyi ne niyetle içtin.", sender: "bot" },
+        { text: "Neyi merak ediyorsan söyle bana ki falına istediğin niyet ile bakabileyim.", sender: "bot" }
+      ], () => setShowFalSebebiInput(true));
     });
   };
+  
+  const handleFalSebebiSubmit = () => {
+    sendMessage(falSebebi, "user");
+    setUserInputs(prevInputs => [...prevInputs, { question: "Fal Sebebi", answer: falSebebi }]);
+    setShowFalSebebiInput(false);
+    sendDelayedMessages([
+      { text: "Kahveler içildi ise şimdi gelelim hoş muhabbete.", sender: "bot" },
+      { text: "Kahve fincanını benimle paylaş ki, o karanlık telvelerden aydınlık bir yol bulabileyim.", sender: "bot" }
+    ], () => setShowUploadButton(true));
+    };
   
   
   
@@ -351,6 +386,7 @@ export default function ChatScreen() {
         Alert.alert('Hata', 'Lütfen düzgün resimler yükleyin. Tüm resimler kahve fincanı değil.');
       } else {
         await axios.post('https://madampep-backend.vercel.app/api/message', {
+          deviceId, // Cihaz ID'sini gönder
           inputs: userInputs
         })
         .then(response => {
@@ -362,7 +398,7 @@ export default function ChatScreen() {
   
         setShowUploadButton(false);
         sendMessage("Yükledim", "user");
-        
+  
         // Mesajların doğru şekilde gönderildiğini ve gösterildiğini kontrol edin
         sendDelayedMessages([
           { text: "Hmm", sender: "bot" },
@@ -371,9 +407,7 @@ export default function ChatScreen() {
         ], () => {
           console.log('All messages sent.');
           setTimeout(() => {
-            setTimeout(() => {
-              navigation.replace('Falla');
-            }, 3000); // 3 saniye bekleme süresi eklendi
+            navigation.replace('Falla');
           }, 3000); // 3 saniye bekleme süresi eklendi
         });
       }
@@ -511,6 +545,25 @@ export default function ChatScreen() {
                 </TouchableOpacity>
               </View>
             )}
+          {showFalSebebiInput && (
+            <View style={[styles.inputContainer, keyboardVisible && styles.inputContainerShift]}>
+              <TextInput
+                style={styles.input}
+                placeholder="Fal sebebin nedir?"
+                placeholderTextColor="#888"
+                value={falSebebi}
+                onChangeText={setFalSebebi}
+                onSubmitEditing={handleFalSebebiSubmit}
+              />
+              <TouchableOpacity
+                style={[styles.sendButton, !falSebebi.trim() && styles.disabledButton]}
+                onPress={handleFalSebebiSubmit}
+                disabled={!falSebebi.trim()}
+              >
+                <Ionicons name="send" size={24} color="#FBEFD1" />
+              </TouchableOpacity>
+            </View>
+        )}
          {showUploadButton && (
             <View style={styles.uploadContainer}>
               <Text style={styles.uploadtitle}>Fincan fotoğraflarını yükle.</Text>
