@@ -226,7 +226,6 @@ export default function ChatScreen() {
     sendDelayedMessages([
       { text: `Memnun oldum ${name}. Ben MadamPep`, sender: "bot" },
       { text: "Fincanın soğurken seni biraz daha yakından tanımama izin ver...", sender: "bot" },
-      { text: `Memnun oldum ${name}. Ben MadamPep`, sender: "bot" },
     ]);
   };
 
@@ -376,6 +375,9 @@ const handleRelationshipOptionSubmit = async (option) => {
       case 'Evliyim':
           relationshipMessage = "Musmutlusunuzdur umarım!";
           break;
+      case 'Sevgilim var':
+          relationshipMessage = "Musmutlusunuzdur umarım!";
+          break;    
       default:
           relationshipMessage = "Bu durumda da bir mesajım var.";
           break;
@@ -424,84 +426,85 @@ const handleRelationshipOptionSubmit = async (option) => {
     }
   };
 
-  const handleUploadPhoto = async () => {
-    if (photos.length < 1) {
-      Alert.alert('Hata', 'En az bir fotoğraf yüklemelisin.');
-      return;
-    }
-  
-    setLoading(true); // Yükleme işlemi başladığında animasyonu göster
-  
-    try {
-      const formData = new FormData();
-      photos.forEach((photo, index) => {
-        formData.append('images', {
-          uri: photo.uri,
-          type: 'image/jpeg',
-          name: `photo_${index}.jpg`,
-        });
+const handleUploadPhoto = async () => {
+  if (photos.length < 1) {
+    Alert.alert('Hata', 'En az bir fotoğraf yüklemelisin.');
+    return;
+  }
+
+  setLoading(true); // Yükleme işlemi başladığında animasyonu göster
+
+  try {
+    const formData = new FormData();
+    photos.forEach((photo, index) => {
+      formData.append('images', {
+        uri: photo.uri,
+        type: 'image/jpeg',
+        name: `photo_${index}.jpg`,
       });
-  
-      console.log('Uploading images:', formData);
-  
-      const response = await axios.post('http://35.228.6.241/api/v1/upload', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-          'Accept': 'application/json',
-        },
+    });
+
+    console.log('Uploading images:', formData);
+
+    const response = await axios.post('http://35.228.6.241/api/v1/upload', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+        'Accept': 'application/json',
+      },
+      timeout: 10000, // 10 saniye zaman aşımı süresi
+    });
+
+    console.log('Response:', response.data);
+
+    const { predictions } = response.data;
+    const allValid = predictions.every(prediction => prediction.isCoffeeCup);
+
+    if (!allValid) {
+      Alert.alert('Hata', 'Lütfen sadece kahve fincanınızın resimlerini yükleyin.');
+    } else {
+      await axios.post('https://madampep-backend.vercel.app/api/message', {
+        deviceId, // Cihaz ID'sini gönder
+        inputs: userInputs
+      })
+      .then(response => {
+        console.log('Response:', response.data);
+      })
+      .catch(error => {
+        console.error('Error sending data:', error);
       });
-  
-      console.log('Response:', response.data);
-  
-      const { predictions } = response.data;
-      const allValid = predictions.every(prediction => prediction.isCoffeeCup);
-  
-      if (!allValid) {
-        Alert.alert('Hata', 'Lütfen düzgün resimler yükleyin. Tüm resimler kahve fincanı değil.');
-      } else {
-        await axios.post('https://madampep-backend.vercel.app/api/message', {
-          deviceId, // Cihaz ID'sini gönder
-          inputs: userInputs
-        })
-        .then(response => {
-          console.log('Response:', response.data);
-        })
-        .catch(error => {
-          console.error('Error sending data:', error);
-        });
-  
-        setShowUploadButton(false);
-        sendMessage("Yükledim", "user");
-  
-        // Mesajların doğru şekilde gönderildiğini ve gösterildiğini kontrol edin
-        sendDelayedMessages([
-          { text: "Hmm", sender: "bot" },
-          { text: "Güzel bir fincan.", sender: "bot" },
-          { text: "Şimdi bana biraz zaman tanı ki bu karanlık telveden aydınlık bir yol çıkartabileyim...", sender: "bot", isSpecial: true }
-        ], () => {
-          console.log('All messages sent.');
-          setTimeout(() => {
-            const aiResponse = response.data.message;
-            navigation.replace('Falla', { deviceId, initialMessages: aiResponse });
-          }, 3000); // 3 saniye bekleme süresi eklendi
-        });
-      }
-    } catch (error) {
-      console.error('Error uploading images:', error);
-      if (error.response) {
-        console.error('Response data:', error.response.data);
-        console.error('Response status:', error.response.status);
-        console.error('Response headers:', error.response.headers);
-      } else if (error.request) {
-        console.error('Request data:', error.request);
-      } else {
-        console.error('Error message:', error.message);
-      }
-      Alert.alert('Hata', `Resimleri yüklerken bir hata oluştu: ${error.message}`);
-    } finally {
-      setLoading(false); // Yükleme işlemi bittiğinde animasyonu gizle
+
+      setShowUploadButton(false);
+      sendMessage("Yükledim", "user");
+
+      // Mesajların doğru şekilde gönderildiğini ve gösterildiğini kontrol edin
+      sendDelayedMessages([
+        { text: "Hmm", sender: "bot" },
+        { text: "Güzel bir fincan.", sender: "bot" },
+        { text: "Şimdi bana biraz zaman tanı ki bu karanlık telveden aydınlık bir yol çıkartabileyim...", sender: "bot", isSpecial: true }
+      ], () => {
+        console.log('All messages sent.');
+        setTimeout(() => {
+          navigation.replace('Falla');
+        }, 3000); // 3 saniye bekleme süresi eklendi
+      });
     }
-  };
+  } catch (error) {
+    console.error('Error uploading images:', error);
+    if (error.response) {
+      console.error('Response data:', error.response.data);
+      console.error('Response status:', error.response.status);
+      console.error('Response headers:', error.response.headers);
+    } else if (error.request) {
+      console.error('Request data:', error.request);
+    } else {
+      console.error('Error message:', error.message);
+    }
+    Alert.alert('Hata', `Resimleri yüklerken bir hata oluştu: ${error.message}`);
+  } finally {
+    setLoading(false); // Yükleme işlemi bittiğinde animasyonu gizle
+  }
+};
+
   
   
   
@@ -609,6 +612,9 @@ const handleRelationshipOptionSubmit = async (option) => {
               <View style={styles.relationshipOptionsContainer}>
                 <TouchableOpacity style={styles.relationshipOptionButton} onPress={() => handleRelationshipOptionSubmit("Biri yok")}>
                   <Text style={styles.buttonText}>Biri yok</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.relationshipOptionButton} onPress={() => handleRelationshipOptionSubmit("Sevgilim var")}>
+                  <Text style={styles.buttonText}>Sevgilim Var</Text>
                 </TouchableOpacity>
                 <TouchableOpacity style={styles.relationshipOptionButton} onPress={() => handleRelationshipOptionSubmit("Aslında biri var ama...")}>
                   <Text style={styles.buttonText}>Aslında biri var ama...</Text>
