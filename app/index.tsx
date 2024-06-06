@@ -77,7 +77,6 @@ export default function HomeScreen() {
   
   return (
     <View style={{ flex: 1 }}>
-      <Text>Device ID: {deviceId}</Text> {/* Device ID'yi göstermek için */}
     </View>
   );
 }

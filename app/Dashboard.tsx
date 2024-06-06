@@ -22,7 +22,7 @@ export default function Dashboard() {
   return (
     <ImageBackground source={require('../assets/images/background.png')} style={styles.background}>
       <SafeAreaView style={styles.safeArea}>
-        <CustomHeader showFrame={true} showBackButton={false} />
+        <CustomHeader showFrame={true} showBackButton={false} showHeaderOptimals = {false} />
         <ScrollView contentContainerStyle={styles.container}>
           <LottieView
             source={require('../assets/eye.json')}

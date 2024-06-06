@@ -1,20 +1,25 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { StyleSheet, View, Text, Animated, ImageBackground, TouchableOpacity, Alert, Image, Modal, Dimensions, SafeAreaView } from 'react-native';
 import { useRouter } from 'expo-router';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import { useLayoutEffect } from 'react';
 import CustomHeader from '../components/CustomHeader';
 import LottieView from 'lottie-react-native';
 import { BlurView } from 'expo-blur';
 import * as SecureStore from 'expo-secure-store';
+import { v4 as uuidv4 } from 'uuid';
+
+const { width, height } = Dimensions.get('window');
 
 export default function Falla() {
+  const route = useRoute();
+  const initialMessages = route.params?.initialMessages || [];
+  const deviceId = route.params?.deviceId;
   const animatedValue = useRef(new Animated.Value(0)).current;
   const [timer, setTimer] = useState(900); // 900 saniye = 15 dakika
   const [modalVisible, setModalVisible] = useState(false);
   const router = useRouter();
   const navigation = useNavigation();
-  const [deviceId, setDeviceId] = useState(null);
 
   useLayoutEffect(() => {
     navigation.setOptions({
@@ -30,7 +35,6 @@ export default function Falla() {
           id = uuidv4();
           await SecureStore.setItemAsync('deviceId', id);
         }
-        setDeviceId(id);
         console.log('Device ID:', id); // Device ID'yi konsolda görmek için
       } catch (error) {
         console.error('Error getting or setting device ID', error);
@@ -45,7 +49,7 @@ export default function Falla() {
       setTimer(prevTimer => {
         if (prevTimer <= 1) {
           clearInterval(interval);
-          router.push({ pathname: '/Fal', params: { deviceId } }); // Süre bitince Fal ekranına yönlendir
+          router.push({ pathname: '/Fal', params: { deviceId, initialMessages } }); // Süre bitince Fal ekranına yönlendir
           return 0;
         }
         return prevTimer - 1;
@@ -53,7 +57,7 @@ export default function Falla() {
     }, 1000);
 
     return () => clearInterval(interval); // Cleanup on unmount
-  }, [router, deviceId]);
+  }, [router, deviceId, initialMessages]);
 
   useEffect(() => {
     Animated.loop(
@@ -90,14 +94,23 @@ export default function Falla() {
 
   const handleModalPress = () => {
     setModalVisible(false);
-    router.push({ pathname: '/Fal', params: { deviceId } });
+    router.push({ pathname: '/Fal', params: { deviceId, initialMessages } }); // Initial messages'ı da gönder
   };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <ImageBackground source={require('../assets/images/background.png')} style={styles.background}>
-
+    <ImageBackground source={require('../assets/images/background.png')} style={styles.background}>
+      <SafeAreaView style={styles.safeArea}>
+        <CustomHeader showBackButton={false} showHeaderOptimals={true} />
         <View style={styles.sandTimerContainer}>
+        <View style={styles.messageContainer}>
+  <View style={styles.messageBubble}>
+    <Text style={styles.messageText}>
+      Ne çok şey var böyle... Aslında şöyle tatlı bi’ şeyler olsa, keyfimiz yerine gelirdi, hızlanırdık biraz...
+    </Text>
+  </View>
+</View>
+
+
           <LottieView
             source={require('../assets/kumsaati.json')}
             autoPlay
@@ -105,7 +118,7 @@ export default function Falla() {
             style={styles.sandTimer}
           />
           <View style={styles.timerContainer}>
-            <Text style={styles.timerText}>00:{formatTime(timer)}</Text>
+            <Text style={styles.timerText}>{formatTime(timer)}</Text>
           </View>
           <View style={styles.speedUpContainer}>
             <Text style={styles.speedUpTitle}>Hızlandır</Text>
@@ -136,43 +149,41 @@ export default function Falla() {
             </BlurView>
           </TouchableOpacity>
         </Modal>
-      </ImageBackground>
-    </SafeAreaView>
+      </SafeAreaView>
+    </ImageBackground>
   );
 }
 
 
-
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: 'black',
-  },
   background: {
     flex: 1,
     resizeMode: 'cover',
-    top:40
+  },
+  safeArea: {
+    flex: 1,
   },
   sandTimerContainer: {
     justifyContent: 'center',
     alignItems: 'center',
     marginTop: 10,
+    flex: 1,
   },
   sandTimer: {
-    width: 300,
-    height: 300,
+    width: width * 0.8,
+    height: width * 0.8,
   },
   timerText: {
     color: '#CDC3AB',
     fontSize: 20,
     marginVertical: 10,
-    fontFamily:'DavidLibre'
+    fontFamily: 'DavidLibre',
   },
   timerContainer: {
     borderColor: '#CDC3AB', // Border rengi
     borderWidth: 1, // Border genişliği
     paddingHorizontal: 14, // İç boşluk
-    paddingVertical:4,
+    paddingVertical: 4,
     borderRadius: 10, // Köşeleri yuvarlama
     marginVertical: 10, // Üst ve alt boşluk
     backgroundColor: 'rgba(66, 66, 66, 0.05)', // Arka plan rengi %5 opacity
@@ -196,8 +207,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  
-
   paywallImage: {
     width: '90%',
     height: '70%',
@@ -241,4 +250,26 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontFamily: 'DavidLibre', // Belirttiğiniz font
   },
+  messageContainer: {
+    flexDirection: 'row',
+    marginLeft:10,
+    justifyContent: 'flex-start',
+    alignItems: 'flex-start', // Align content to the start
+    alignSelf: 'flex-start', // Align bubble to the start
+  },
+  messageBubble: {
+    maxWidth: '75%',
+    padding: 10,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    justifyContent: 'center',
+    
+  },
+  messageText: {
+    color: '#FBEFD1',
+    fontSize: 18,
+    fontFamily: 'DavidLibre',
+  },
+
+
 });

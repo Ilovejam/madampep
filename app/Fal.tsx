@@ -14,12 +14,13 @@ export default function Fal() {
   const flatListRef = useRef(null);
   const navigation = useNavigation();
   const route = useRoute();
-  const [isBotTyping, setIsBotTyping] = useState(false);
+  const [isBotTyping, setIsBotTyping] = useState(true);
   const [zodiacSign, setZodiacSign] = useState('Avatar');
   const [keyboardHeight, setKeyboardHeight] = useState(0);
   const [isLoadingMessages, setIsLoadingMessages] = useState(true);
   const [keyboardVisible, setKeyboardVisible] = useState(false);
   const [deviceId, setDeviceId] = useState(route.params?.deviceId || null);
+  const [showPaywall, setShowPaywall] = useState(false); // Yeni state
 
   useLayoutEffect(() => {
     navigation.setOptions({
@@ -49,8 +50,8 @@ export default function Fal() {
 
   useEffect(() => {
     if (deviceId) {
-      // Typing animation başlasın
       setIsBotTyping(true);
+      setShowInput(false); // Input'u inaktif yap
   
       axios.get('https://madampep-backend.vercel.app/api/ai-response', {
         params: { deviceId }
@@ -100,12 +101,12 @@ export default function Fal() {
           if (index === messages.length - 1) {
             setIsBotTyping(false);
             setIsLoadingMessages(false);
+            setShowInput(true); // İlk mesajlar geldikten sonra input alanını aktif yap
           }
         }, 2000);
       }, index * 4000);
     });
   };
-  
 
   useEffect(() => {
     if (flatListRef.current) {
@@ -131,32 +132,38 @@ export default function Fal() {
       keyboardDidShowListener.remove();
     };
   }, []);
-  
+
   const sendMessage = async (text) => {
     if (text.trim()) {
       const userMessage = { id: `user-${Date.now()}`, text, sender: 'user' };
       setMessages(prevMessages => [...prevMessages, userMessage]);
       setInput('');
-      setIsBotTyping(true);
-  
-      try {
-        const response = await axios.post('https://madampep-backend.vercel.app/api/short-message', {
-          deviceId,
-          inputs: [{ question: 'Kullanıcı Mesajı', answer: text }]
-        });
-        const aiMessage = response.data.message;
-        console.log('AI Response:', aiMessage); // Log AI response
-        const messageParagraphs = aiMessage.split('\n').filter(paragraph => paragraph.trim() !== '');
-        const formattedMessages = messageParagraphs.map((paragraph, index) => ({
-          id: `ai-${index + userMessage.id}-${Date.now()}`,
-          text: paragraph,
-          sender: 'bot'
-        }));
-        showMessagesSequentially(formattedMessages);
-      } catch (error) {
-        console.error('Error sending data:', error);
-        setIsBotTyping(false);
-      }
+      setShowPaywall(true); // Paywall'u göster
+      setShowInput(false); // Input'u gizle
+    }
+  };
+
+  const handlePaywallClick = async () => {
+    setShowPaywall(false); // Paywall'u gizle
+    setIsBotTyping(true);
+
+    try {
+      const response = await axios.post('https://madampep-backend.vercel.app/api/short-message', {
+        deviceId,
+        inputs: [{ question: 'Kullanıcı Mesajı', answer: input }]
+      });
+      const aiMessage = response.data.message;
+      console.log('AI Response:', aiMessage); // Log AI response
+      const messageParagraphs = aiMessage.split('\n').filter(paragraph => paragraph.trim() !== '');
+      const formattedMessages = messageParagraphs.map((paragraph, index) => ({
+        id: `ai-${index}-${Date.now()}`,
+        text: paragraph,
+        sender: 'bot'
+      }));
+      showMessagesSequentially(formattedMessages);
+    } catch (error) {
+      console.error('Error sending data:', error);
+      setIsBotTyping(false);
     }
   };
 
@@ -200,15 +207,16 @@ export default function Fal() {
               style={styles.messageList}
               contentContainerStyle={[styles.messageListContent, { paddingBottom: keyboardHeight }]}
             />
-            {!showInput && (
+            {showPaywall && ( // showPaywall state'ine göre lokumikramet.png'yi göster
               <TouchableOpacity 
-                onPress={() => setShowInput(true)} 
+                onPress={handlePaywallClick} 
                 style={styles.paywallContainer}
                 disabled={isLoadingMessages}
               >
                 <Image source={require('../assets/images/lokumikramet.png')} style={styles.paywallImage} />
               </TouchableOpacity>
             )}
+
             {showInput && (
               <View style={styles.inputContainer}>
                 <TextInput
@@ -230,6 +238,7 @@ export default function Fal() {
     </ImageBackground>
   );
 }
+
 
 
 const styles = StyleSheet.create({

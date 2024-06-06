@@ -10,7 +10,7 @@ export default function SplashScreen({ onAnimationEnd }) {
   useEffect(() => {
     async function playSound() {
       const { sound } = await Audio.Sound.createAsync(
-        require('../assets/madampep.mp3')
+        require('../assets/splashsound.mp3')
       );
       await sound.playAsync();
 
@@ -55,11 +55,10 @@ export default function SplashScreen({ onAnimationEnd }) {
           />
         </View>
         <Animated.View style={[styles.textContainer, { opacity: textOpacity }]}>
-          <Text style={styles.title}>Hoş Geldin Yabancı!</Text>
+          <Text style={styles.title}>Merhaba!</Text>
           <Text style={styles.text}>
-            Gizem perdesini arala,{'\n'}
-            ışıkların arasından geç,{'\n'}
-            gel sırlarını keşfedelim!
+            Bir dilek tut,{'\n'}
+            tatlı sohbetimiz başlasın.{'\n'}
           </Text>
         </Animated.View>
       </View>

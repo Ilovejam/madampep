@@ -224,8 +224,9 @@ export default function ChatScreen() {
     setUserInputs(prevInputs => [...prevInputs, { question: "Adınız", answer: name }]);
     setStep(2);
     sendDelayedMessages([
-      { text: `Güzel isim ${name}...`, sender: "bot" },
-      { text: "Peki kendini nasıl tanımlıyorsun? Sana hitap edebilmem için bu bilgi önemli.", sender: "bot" }
+      { text: `Memnun oldum ${name}. Ben MadamPep`, sender: "bot" },
+      { text: "Fincanın soğurken seni biraz daha yakından tanımama izin ver...", sender: "bot" },
+      { text: `Memnun oldum ${name}. Ben MadamPep`, sender: "bot" },
     ]);
   };
 
@@ -277,16 +278,47 @@ export default function ChatScreen() {
   
     const zodiacMessages = [
       genderSpecificMessage,
-      { text: "Ne iş yapıyorsun?", sender: "bot" }
+      { text: getZodiacMessage(zodiac), sender: "bot" }, // Burç mesajını ekle
+      { text: "Fincanın iyice soğumuştur artık... Birkaç küçük sorudan sonra başlayabiliriz bence. Tanışma sorularından ne kaldı bir bakalım… Hah! Neyle meşgulsün?", sender: "bot" }
     ];
   
     sendDelayedMessages(zodiacMessages, () => setShowJobOptions(true));
   };
-  
+
+const getZodiacMessage = (zodiac) => {
+  switch (zodiac) {
+    case 'Koç':
+      return "Bir koç burcu olarak merakla odaklandığını görebiliyorum. Bugün bütün iyi enerjiler senin için çalışacak.";
+    case 'Boğa':
+      return "Hmm… Boğa… Hayattan keyif almak senin için sanat. Şimdi bu kahve keyfini bir falla süsleyelim.";
+    case 'İkizler':
+      return "İkizler! Severim. Entelektüel ve esprili birini görmek harika. Telve about your wishes desem? 🙂";
+    case 'Yengeç':
+      return "Sana ustam mı demeliyim sevgili yengeç? Aramızdaki en psişik kişinin sen olduğu bir gerçek.";
+    case 'Aslan':
+      return "Bir aslan olarak etrafına yaydığın ışık çok güçlü. Geleceğinin de kişiliğin kadar parlak olması dileğiyle.";
+    case 'Başak':
+      return "Canım başak burcu. Analitik zekân kadar sezgilerin de kuvvetli. Dilerim falında ilham veren detaylar bulursun.";
+    case 'Terazi':
+      return "Ooo, terazi… Her zaman bir denge ve uyum arıyorsun. Umarım fincanında da aradığını bulursun.";
+    case 'Akrep':
+      return "Bir akrep olarak gerçeği keşfetmek en büyük arzun. Bana soruların olacağını şimdiden hissediyorum.";
+    case 'Yay':
+      return "Yay! İşte her zaman kutunun dışında düşünen biri. Bakalım aynısı fincanın için de geçerli mi?";
+    case 'Oğlak':
+      return "Hayatta amaçların için ilerlemeyi seviyorsun sevgili oğlak. O zaman buradan falımıza geçelim mi?";
+    case 'Kova':
+      return "Vizyon sahibi bir kova burcuna fal bakmak heyecan verici. Geleceğini benimle keşfe hazır mısın?";
+    case 'Balık':
+      return "Canım balık. Büyüleyici bir düş dünyan var. Falında bir sürü fantastik şekil görürsem hiç şaşırmam.";
+    default:
+      return "";
+  }
+};
+
   
   const handleFalForm = () => {
     sendDelayedMessages([
-      { text: "Kahveler içildi ise şimdi gelelim hoş muhabbete.", sender: "bot" },
       { text: "Kahve fincanını benimle paylaş ki, o karanlık telvelerden aydınlık bir yol bulabileyim.", sender: "bot" }
     ], () => setShowUploadButton(true));
   };
@@ -295,30 +327,72 @@ export default function ChatScreen() {
     sendMessage(option, "user");
     setUserInputs(prevInputs => [...prevInputs, { question: "Meslek", answer: option }]);
     setShowJobOptions(false);
+
+    let jobMessage;
+    switch (option) {
+        case 'Okuyorum':
+            jobMessage = "Umarım öğrencilik sana iyi davranıyordur.";
+            break;
+        case 'Çalışıyorum':
+            jobMessage = "Kendi ayakları üstünde durabilen güçlü birisin demek…";
+            break;
+        case 'Hem çalışıyor hem okuyorum':
+            jobMessage = "Zordan korkmayan biri var galiba karşımda.";
+            break;
+        case 'Çalışmıyorum':
+            jobMessage = "Kendine vakit ayırmak gibisi yok.";
+            break;
+        default:
+            jobMessage = "Bu durumda da bir mesajım var.";
+            break;
+    }
+
     sendDelayedMessages([
-      { text: "Tamamdır...", sender: "bot" },
-      { text: "Peki...", sender: "bot" },
-      { text: "Aşk hayatının şu an hangi aşamasındasın?", sender: "bot" }
+        { text: jobMessage, sender: "bot" }, // Job message eklendi
+        { text: "Peki... Aşk hayatın ne alemde?", sender: "bot" }
     ], () => setShowRelationshipOptions(true));
-  };
+};
+
   
-  const handleRelationshipOptionSubmit = async (option) => {
-    sendMessage(option, "user");
-    setUserInputs(prevInputs => [...prevInputs, { question: "İlişki Durumu", answer: option }]);
-    setShowRelationshipOptions(false);
-    sendDelayedMessages([
-      { text: "Ne Güzel..", sender: "bot" },
-      { text: "En güzel zamanlarındasın.", sender: "bot" },
-      { text: "Aşk hayatı senin için mutluluk dolu olsun.", sender: "bot" },
+const handleRelationshipOptionSubmit = async (option) => {
+  sendMessage(option, "user");
+  setUserInputs(prevInputs => [...prevInputs, { question: "İlişki Durumu", answer: option }]);
+  setShowRelationshipOptions(false);
+
+  let relationshipMessage;
+  switch (option) {
+      case 'Biri yok':
+          relationshipMessage = "Bekarlık sultanlıktır.";
+          break;
+      case 'Aslında biri var ama...':
+          relationshipMessage = "Bakalım falın bu konuda neler söyleyecek...";
+          break;
+      case 'Karışık':
+          relationshipMessage = "Hayatta ne basit ki zaten…";
+          break;
+      case 'Nişanlıyım':
+          relationshipMessage = "Nasıl derler? Allah tamamına erdirsin!";
+          break;
+      case 'Evliyim':
+          relationshipMessage = "Musmutlusunuzdur umarım!";
+          break;
+      default:
+          relationshipMessage = "Bu durumda da bir mesajım var.";
+          break;
+  }
+
+  sendDelayedMessages([
+      { text: relationshipMessage, sender: "bot" },
       { text: "Tanışma faslımızın sonuna geldik.", sender: "bot" }
-    ], () => {
+  ], () => {
       sendDelayedMessages([
-        { text: "Geldik son ve en önemli soruya", sender: "bot" },
-        { text: "Bu kahveyi ne niyetle içtin.", sender: "bot" },
-        { text: "Neyi merak ediyorsan söyle bana ki falına istediğin niyet ile bakabileyim.", sender: "bot" }
+          { text: "Geldik son ve en önemli soruya", sender: "bot" },
+          { text: "Bu kahveyi ne niyetle içtin.", sender: "bot" },
+          { text: "Neyi merak ediyorsan söyle bana ki falına istediğin niyet ile bakabileyim.", sender: "bot" }
       ], () => setShowFalSebebiInput(true));
-    });
-  };
+  });
+};
+
   
   const handleFalSebebiSubmit = () => {
     sendMessage(falSebebi, "user");
@@ -407,7 +481,8 @@ export default function ChatScreen() {
         ], () => {
           console.log('All messages sent.');
           setTimeout(() => {
-            navigation.replace('Falla');
+            const aiResponse = response.data.message;
+            navigation.replace('Falla', { deviceId, initialMessages: aiResponse });
           }, 3000); // 3 saniye bekleme süresi eklendi
         });
       }
@@ -427,6 +502,7 @@ export default function ChatScreen() {
       setLoading(false); // Yükleme işlemi bittiğinde animasyonu gizle
     }
   };
+  
   
   
 
@@ -531,17 +607,20 @@ export default function ChatScreen() {
             )}
             {showRelationshipOptions && !isBotTyping && (
               <View style={styles.relationshipOptionsContainer}>
-                <TouchableOpacity style={styles.relationshipOptionButton} onPress={() => handleRelationshipOptionSubmit("Evliyim")}>
-                  <Text style={styles.buttonText}>Evliyim</Text>
+                <TouchableOpacity style={styles.relationshipOptionButton} onPress={() => handleRelationshipOptionSubmit("Biri yok")}>
+                  <Text style={styles.buttonText}>Biri yok</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.relationshipOptionButton} onPress={() => handleRelationshipOptionSubmit("Aslında biri var ama...")}>
+                  <Text style={styles.buttonText}>Aslında biri var ama...</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.relationshipOptionButton} onPress={() => handleRelationshipOptionSubmit("Karışık")}>
+                  <Text style={styles.buttonText}>Karışık</Text>
                 </TouchableOpacity>
                 <TouchableOpacity style={styles.relationshipOptionButton} onPress={() => handleRelationshipOptionSubmit("Nişanlıyım")}>
                   <Text style={styles.buttonText}>Nişanlıyım</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={styles.relationshipOptionButton} onPress={() => handleRelationshipOptionSubmit("Yok")}>
-                  <Text style={styles.buttonText}>Yok</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.relationshipOptionButton} onPress={() => handleRelationshipOptionSubmit("Sevgilim var")}>
-                  <Text style={styles.buttonText}>Sevgilim var</Text>
+                <TouchableOpacity style={styles.relationshipOptionButton} onPress={() => handleRelationshipOptionSubmit("Evliyim")}>
+                  <Text style={styles.buttonText}>Evliyim</Text>
                 </TouchableOpacity>
               </View>
             )}
@@ -598,7 +677,7 @@ export default function ChatScreen() {
                 loop
                 style={styles.loadingAnimation}
               />
-              <Text style={styles.loadingText}>Resimleriniz yükleniyor, lütfen bekleyin...</Text>
+              <Text style={styles.loadingText}>Kahve fotoğraların yükleniyor...</Text>
             </BlurView>
           )}
 

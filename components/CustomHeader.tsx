@@ -23,7 +23,7 @@ const getZodiacSign = (day, month) => {
   return 'unknown';
 };
 
-export default function CustomHeader({ isBotTyping, showFrame = false, showBackButton = true }) {
+export default function CustomHeader({ isBotTyping, showFrame = false, showBackButton = true, showHeaderOptimals = true }) {
   const navigation = useNavigation();
   const [currentZodiac, setCurrentZodiac] = useState(null);
   const [isProfileDataAvailable, setIsProfileDataAvailable] = useState(false);
@@ -94,25 +94,29 @@ export default function CustomHeader({ isBotTyping, showFrame = false, showBackB
         </TouchableOpacity>
       )}
       <View style={styles.headerTitleContainer}>
-        <TouchableOpacity onPress={handleLottiePress} disabled={!isProfileDataAvailable}>
-          <LottieView
-            source={require('../assets/eye.json')}
-            autoPlay
-            loop
-            style={styles.headerImage}
-          />
-        </TouchableOpacity>
-        <View>
-          <Text style={styles.headerTitle}>Madampep</Text>
-          <Text style={styles.headerSubtitle}>{isBotTyping ? 'yazıyor...' : 'online'}</Text>
-        </View>
+        {showHeaderOptimals && (
+          <>
+            <LottieView
+              source={require('../assets/eye.json')}
+              autoPlay
+              loop
+              style={styles.headerImage}
+            />
+            <View>
+              <Text style={styles.headerTitle}>MadamPep</Text>
+              <Text style={styles.headerSubtitle}>{isBotTyping ? 'yazıyor...' : 'online'}</Text>
+            </View>
+          </>
+        )}
       </View>
       <View style={styles.iconContainer}>
         {showFrame && (
           <Image source={require('../assets/images/frame.png')} style={styles.profileImageLokum} />
         )}
         {currentZodiac && (
-          <Image source={zodiacImages[currentZodiac]} style={styles.profileImage} />
+          <TouchableOpacity onPress={handleLottiePress} disabled={!isProfileDataAvailable}>
+            <Image source={zodiacImages[currentZodiac]} style={styles.profileImage} />
+          </TouchableOpacity>
         )}
       </View>
     </View>
@@ -132,6 +136,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginLeft: 10,
     flex: 1,
+    // justifyContent: 'center', // Title'ı ortalamayı kaldırdık
   },
   backButton: {},
   backIcon: {
@@ -157,8 +162,8 @@ const styles = StyleSheet.create({
     fontSize: 12,
   },
   profileImage: {
-    width: 40, // Boyutları ayarlandı
-    height: 40, // Boyutları ayarlandı
+    width: 35, // Boyutları ayarlandı
+    height: 35, // Boyutları ayarlandı
     marginRight: 10,
   },
   
