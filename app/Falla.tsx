@@ -102,15 +102,13 @@ export default function Falla() {
       <SafeAreaView style={styles.safeArea}>
         <CustomHeader showBackButton={false} showHeaderOptimals={true} />
         <View style={styles.sandTimerContainer}>
-        <View style={styles.messageContainer}>
-  <View style={styles.messageBubble}>
-    <Text style={styles.messageText}>
-      Ne çok şey var böyle... Aslında şöyle tatlı bi’ şeyler olsa, keyfimiz yerine gelirdi, hızlanırdık biraz...
-    </Text>
-  </View>
-</View>
-
-
+          <View style={styles.messageContainer}>
+            <View style={styles.messageBubble}>
+              <Text style={styles.messageText}>
+                Ne çok şey var böyle... Aslında şöyle tatlı bi’ şeyler olsa, keyfimiz yerine gelirdi, hızlanırdık biraz...
+              </Text>
+            </View>
+          </View>
           <LottieView
             source={require('../assets/kumsaati.json')}
             autoPlay
@@ -154,7 +152,6 @@ export default function Falla() {
   );
 }
 
-
 const styles = StyleSheet.create({
   background: {
     flex: 1,
@@ -164,28 +161,28 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   sandTimerContainer: {
+    flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 10,
-    flex: 1,
+    paddingVertical: height * 0.05,
   },
   sandTimer: {
-    width: width * 0.8,
-    height: width * 0.8,
+    width: width * 0.6,
+    height: width * 0.6,
   },
   timerText: {
     color: '#CDC3AB',
-    fontSize: 20,
-    marginVertical: 10,
+    fontSize: width * 0.05,
+    marginVertical: height * 0.02,
     fontFamily: 'DavidLibre',
   },
   timerContainer: {
     borderColor: '#CDC3AB', // Border rengi
     borderWidth: 1, // Border genişliği
-    paddingHorizontal: 14, // İç boşluk
-    paddingVertical: 4,
-    borderRadius: 10, // Köşeleri yuvarlama
-    marginVertical: 10, // Üst ve alt boşluk
+    paddingHorizontal: width * 0.04, // İç boşluk
+    paddingVertical: height * 0.01,
+    borderRadius: width * 0.02, // Köşeleri yuvarlama
+    marginVertical: height * 0.02, // Üst ve alt boşluk
     backgroundColor: 'rgba(66, 66, 66, 0.05)', // Arka plan rengi %5 opacity
     alignItems: 'center', // İçeriği ortalamak için
   },
@@ -211,21 +208,21 @@ const styles = StyleSheet.create({
     width: '90%',
     height: '70%',
     resizeMode: 'contain',
-    marginBottom: -290,
+    marginBottom: -height * 0.3,
   },
   speedUpContainer: {
     alignItems: 'center',
-    marginTop: 20,
+    marginTop: height * 0.03,
     backgroundColor: 'rgba(66, 66, 66, 0.05)', // %5 opacity ile 424242 rengi
-    padding: 15,
-    borderRadius: 10,
+    padding: height * 0.02,
+    borderRadius: width * 0.02,
     borderWidth: 1,
     borderColor: 'rgba(205, 195, 171, 0.15)', // %15 opacity ile CDC3AB rengi
   },
   speedUpTitle: {
     color: '#CDC3AB',
-    fontSize: 30, // Font boyutu büyütüldü
-    marginBottom: 10,
+    fontSize: width * 0.08, // Font boyutu büyütüldü
+    marginBottom: height * 0.02,
     textAlign: 'center',
     fontFamily: 'DavidLibre', // Belirttiğiniz font
   },
@@ -236,40 +233,37 @@ const styles = StyleSheet.create({
   },
   speedUpButton: {
     alignItems: 'center',
-    marginHorizontal: 30, // Ortak mesafe artırıldı
+    marginHorizontal: width * 0.08, // Ortak mesafe artırıldı
   },
   buttonImage: {
-    width: 110, // Butonlar büyütüldü
-    height: 110, // Butonlar büyütüldü
+    width: width * 0.25, // Butonlar büyütüldü
+    height: width * 0.25, // Butonlar büyütüldü
     resizeMode: 'contain',
   },
   buttonText: {
     color: 'white',
-    fontSize: 18, // Font boyutu büyütüldü
-    marginTop: 5,
+    fontSize: width * 0.045, // Font boyutu büyütüldü
+    marginTop: height * 0.01,
     textAlign: 'center',
     fontFamily: 'DavidLibre', // Belirttiğiniz font
   },
   messageContainer: {
     flexDirection: 'row',
-    marginLeft:10,
+    marginLeft: width * 0.04,
     justifyContent: 'flex-start',
     alignItems: 'flex-start', // Align content to the start
     alignSelf: 'flex-start', // Align bubble to the start
   },
   messageBubble: {
     maxWidth: '75%',
-    padding: 10,
-    borderRadius: 20,
+    padding: width * 0.03,
+    borderRadius: width * 0.04,
     backgroundColor: 'rgba(255, 255, 255, 0.05)',
     justifyContent: 'center',
-    
   },
   messageText: {
     color: '#FBEFD1',
-    fontSize: 18,
+    fontSize: width * 0.045,
     fontFamily: 'DavidLibre',
   },
-
-
 });
