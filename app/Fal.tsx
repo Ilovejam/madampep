@@ -58,12 +58,12 @@ export default function Fal() {
 
   useEffect(() => {
     if (deviceId) {
-      setIsBotTyping(true); // Typing animation'u başlat
+      setIsBotTyping(true); // Typing animasyonunu başlat
       setShowInput(false); // Input'u inaktif yap
-    
+  
       // İlk başta "typing" mesajı ekle
       setMessages([{ id: 'typing', isTyping: true, sender: 'bot' }]);
-    
+  
       axios.get('https://madampep-backend.vercel.app/api/ai-response', {
         params: { deviceId }
       })
@@ -71,21 +71,23 @@ export default function Fal() {
         const aiMessage = response.data.message;
         console.log('AI Response:', aiMessage); // Log AI response
         const messageParagraphs = aiMessage.split('\n').filter(paragraph => paragraph.trim() !== '');
-        const formattedMessages = messageParagraphs.map((paragraph, index) => ({
+        const additionalMessages = messageParagraphs.map((paragraph, index) => ({
           id: `ai-${index}-${Date.now()}`,
           text: paragraph,
           sender: 'bot'
         }));
-    
-        sendDelayedMessages(formattedMessages);
+  
+        sendDelayedMessages(additionalMessages, () => {
+          setShowInput(true); // Mesajlar geldikten sonra input'u aktif yap
+        });
       })
       .catch(error => {
         console.error('Error fetching AI response:', error);
-        setIsBotTyping(false); // Hata durumunda typing animation'u durdur
+        setIsBotTyping(false); // Hata durumunda typing animasyonunu durdur
       });
     }
   }, [deviceId]);
-
+  
   
   
 
@@ -232,6 +234,7 @@ export default function Fal() {
       setInput('');
       setIsBotTyping(true);
       setShowInput(false); // Input'u gizle
+      setShowPaywall(true); // Paywall'ı göster
   
       console.log('User message sent:', text); // Debugging için ekleyin
   
@@ -258,35 +261,14 @@ export default function Fal() {
     }
   };
   
+  
 
 // Paywall'a tıklandığında çağrılan fonksiyon
-const handlePaywallClick = async () => {
-  console.log('Paywall clicked'); // Debugging için ekleyin
-  setShowPaywall(false); // Paywall'u gizle
-  setIsBotTyping(true);
-  const userMessage = input;
-
-  try {
-    const response = await axios.post('https://madampep-backend.vercel.app/api/short-message', {
-      deviceId,
-      inputs: [{ question: 'Kullanıcı Mesajı', answer: userMessage }]
-    });
-    const aiMessage = response.data.message;
-    console.log('AI Response:', aiMessage); // Log AI response
-    const messageParagraphs = aiMessage.split('\n').filter(paragraph => paragraph.trim() !== '');
-    const formattedMessages = messageParagraphs.map((paragraph, index) => ({
-      id: `ai-${index}-${Date.now()}`,
-      text: paragraph,
-      sender: 'bot'
-    }));
-    sendDelayedMessages(formattedMessages, () => {
-      setShowInput(true); // Mesajlar geldikten sonra input'u göster
-    });
-  } catch (error) {
-    console.error('Error sending data:', error);
-    setIsBotTyping(false);
-  }
+const handlePaywallClick = () => {
+  console.log('Paywall clicked'); // Konsola tıklanıldığını yazdır
+  setShowPaywall(false); // Paywall'u ekrandan kaldır
 };
+
 
   
   
@@ -333,15 +315,15 @@ const handlePaywallClick = async () => {
             style={styles.messageList}
             contentContainerStyle={[styles.messageListContent, { paddingBottom: keyboardHeight }]}
           />
-          {/* {showPaywall && ( // showPaywall state'ine göre lokumikramet.png'yi göster
+         {showPaywall && (
   <TouchableOpacity 
     onPress={handlePaywallClick} 
     style={styles.paywallContainer}
-    disabled={isLoadingMessages}
   >
     <Image source={require('../assets/images/lokumikramet.png')} style={styles.paywallImage} />
   </TouchableOpacity>
-)} */}
+)}
+
         {showInput && (
             <View style={styles.inputContainer}>
               <TextInput
