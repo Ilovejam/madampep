@@ -361,7 +361,7 @@ const playSound = async (audioData) => {
           { text: "Gelelim burcuna… Ne zaman doğdun?", sender: "bot" }
         ]
       : [
-          { text: "Ahahaah deme ya", sender: "bot" },
+          { text: "Tanımlar böyle küçük listelere sığmıyor, değil mi?", sender: "bot" },
           { text: "Gelelim burcuna… Ne zaman doğdun?", sender: "bot" }
         ];
     sendMessage(selectedGender, "user");
