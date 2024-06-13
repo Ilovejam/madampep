@@ -13,6 +13,10 @@ import Constants from 'expo-constants';
 import * as SecureStore from 'expo-secure-store';
 import { v4 as uuidv4 } from 'uuid';
 import 'react-native-get-random-values'; 
+import * as AV from 'expo-av';
+import { decode as atob, encode as btoa } from 'base-64';
+import { Audio } from 'expo-av';
+import { Buffer } from 'buffer';
 
 const zodiacSigns = {
   'Oğlak': 'capricorn',
@@ -54,7 +58,6 @@ export default function ChatScreen() {
   const [input, setInput] = useState('');
   const [keyboardVisible, setKeyboardVisible] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState(false);
-  const [date, setDate] = useState(new Date());
   const [showJobOptions, setShowJobOptions] = useState(false);
   const [userInputs, setUserInputs] = useState([]);
   const flatListRef = useRef(null);
@@ -69,7 +72,17 @@ export default function ChatScreen() {
   const [falSebebi, setFalSebebi] = useState('');
   const [showFalSebebiInput, setShowFalSebebiInput] = useState(false);
   const [deviceId, setDeviceId] = useState('');
+  const isSpeaking = useRef(false);
+  const soundRef = useRef(new Audio.Sound());
+  const messageQueue = useRef([]); // Mesaj kuyruğu
+  const isPlaying = useRef(false);
+  const XI_API_KEY = 'f9dbeae10b73feaf8374ee06837c40c8';
+  const VOICE_ID = 'OVZaeezkMlYaC2nWNJoy'; // Türkçe ses kimliğiniz
+  const [sound, setSound] = useState();
 
+  
+
+  
   useEffect(() => {
     const getDeviceId = async () => {
       try {
@@ -88,8 +101,19 @@ export default function ChatScreen() {
     getDeviceId();
   }, []);
 
-
   useEffect(() => {
+    async function dd() {
+      const { sound } = await Audio.Sound.createAsync(
+        require('../assets/selam.mp3')
+      );
+      setTimeout(async () => {
+        await sound.playAsync();
+      }, 3000); // 2 saniye sonra sesi oynat
+    }
+  
+    dd();
+  }, []);
+    useEffect(() => {
     const keyboardDidShowListener = Keyboard.addListener('keyboardDidShow', () => {
       setKeyboardVisible(true);
     });
@@ -128,36 +152,52 @@ export default function ChatScreen() {
   };
   
 
-  useEffect(() => {
-    let timeout;
-    const initialMessages = [
-      { id: `msg-1-${Date.now()}`, text: "Selam Yabancı ", sender: "bot" },
-      { id: `msg-2-${Date.now()}`, text: "Kahveler içildi ise, şimdi gelelim hoş muhabbete.", sender: "bot" },
-      { id: `msg-3-${Date.now()}`, text: "Adını bana bahşeder misin?.", sender: "bot" },
-      { id: `msg-4-${Date.now()}`, text: "Geleceğini görmem için o harfler bana lazım...", sender: "bot" }
-    ];    
+  const playHello = async () => {
+    try {
+        const { sound } = await Audio.Sound.createAsync(
+            require('../assets/selam.mp3')
+        );
+        await sound.playAsync();
+        await sound.unloadAsync();
+    } catch (error) {
+        console.error('Error playing sound:', error);
+    }
+};
 
-    const addMessages = (index) => {
+  
+useEffect(() => {
+  let timeout;
+  const initialMessages = [
+      { id: `msg-1-${Date.now()}`, text: "Hoş geldin yabancı! Sana hitap edebilmek için ismini öğrenebilir miyim? ", sender: "bot" },
+  ];
+
+  const addMessages = (index) => {
       if (index < initialMessages.length) {
-        timeout = setTimeout(() => {
-          setMessages((prevMessages) => [
-            ...prevMessages.slice(0, prevMessages.length - 1),
-            initialMessages[index],
-            { id: `loading-${index + 1}-${Date.now()}`, text: '...', sender: 'bot' },
-          ]);
-          addMessages(index + 1);
-        }, 2000);
+          timeout = setTimeout(() => {
+              setMessages((prevMessages) => [
+                  ...prevMessages.slice(0, prevMessages.length - 1),
+                  initialMessages[index],
+                  { id: `loading-${index + 1}-${Date.now()}`, text: '...', sender: 'bot' },
+              ]);
+              if (initialMessages[index].text === "Hoş geldin yabancı! Sana hitap edebilmek için ismini öğrenebilir miyim? ") {
+                  playHello(); // Mesaj gösterildiğinde sesi çal
+              }
+              addMessages(index + 1);
+          }, 2000);
       } else {
-        setMessages((prevMessages) => prevMessages.slice(0, prevMessages.length - 1));
-        setIsBotTyping(false); // Set typing to false after initial messages
+          setMessages((prevMessages) => prevMessages.slice(0, prevMessages.length - 1));
+          setIsBotTyping(false); // Set typing to false after initial messages
       }
-    };
-    
+  };
 
-    addMessages(0);
+  addMessages(0);
 
-    return () => clearTimeout(timeout);
-  }, []);
+  return () => clearTimeout(timeout);
+}, []);
+
+  
+
+  
 
   useEffect(() => {
     if (flatListRef.current) {
@@ -165,34 +205,109 @@ export default function ChatScreen() {
     }
   }, [messages]);
 
+  const convertTextToSpeech = async (text, apiKey, voiceId) => {
+    const url = `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`;
+  
+    const headers = {
+      "Accept": "audio/mpeg",
+      "Content-Type": "application/json",
+      "xi-api-key": apiKey
+    };
+  
+    const data = {
+      text,
+      "model_id": "eleven_multilingual_v2",
+      "voice_settings": {
+        "stability": 0.5,
+        "similarity_boost": 0.5,
+        "style": 0.0,
+        "use_speaker_boost": true
+      }
+    };
+  
+    try {
+      const response = await axios.post(url, data, { headers, responseType: 'arraybuffer' });
+      return response.data;
+    } catch (error) {
+      console.error('Error converting text to speech:', error);
+      return null;
+    }
+  };
+  
+  const sendDelayedMessages = async (messages, callback) => {
+    setIsBotTyping(true); // Set bot typing to true before sending messages
+  
+    // Eğer gönderilecek mesajlar yoksa typing animasyonunu göstermemek için kontrol ekliyoruz.
+    if (messages.length === 0) {
+      setIsBotTyping(false);
+      return;
+    }
+    
+    for (let index = 0; index < messages.length; index++) {
+      const message = messages[index];
+  
+      // Typing animation eklemek için geçici bir loading mesajı ekliyoruz
+      setMessages(prevMessages => [
+        ...prevMessages,
+        { id: `loading-${prevMessages.length + 1}-${Date.now()}`, text: '...', sender: 'bot' }
+      ]);
+      flatListRef.current.scrollToEnd({ animated: true }); // Her yeni mesajda listeyi en alta kaydır
+  
+      await new Promise(resolve => setTimeout(resolve, 2000)); // 2 saniye bekletiyoruz (typing süresi)
+  
+      setMessages(prevMessages => [
+        ...prevMessages.slice(0, prevMessages.length - 1), // Loading mesajını kaldırıyoruz
+        { id: `msg-${prevMessages.length + 1}-${Date.now()}`, text: message.text, sender: message.sender }
+      ]);
+      flatListRef.current.scrollToEnd({ animated: true }); // Her yeni mesajda listeyi en alta kaydır
+  
+      messageQueue.current.push(message); // Mesajları kuyruğa ekleyin
+      await processQueue(); // Kuyruğu işleme başlat ve bitene kadar bekle
+  
+      if (index === messages.length - 1) {
+        setIsBotTyping(false); // Set bot typing to false after sending all messages
+        if (callback) setTimeout(callback, 1000);
+      }
+    }
+  };
   
 
-  const sendDelayedMessages = (messages, callback) => {
-    setIsBotTyping(true); // Set bot typing to true before sending messages
-    
-    setMessages(prevMessages => [
-      ...prevMessages,
-      { id: `loading-${prevMessages.length}-${Date.now()}`, text: '...', sender: 'bot' }
-    ]);
-    
-    messages.forEach((message, index) => {
-      setTimeout(() => {
-        setMessages(prevMessages => [
-          ...prevMessages.slice(0, prevMessages.length - 1),
-          { id: `msg-${prevMessages.length + 1}-${Date.now()}`, text: message.text, sender: message.sender },
-          { id: `loading-${index + 1}-${Date.now()}`, text: '...', sender: 'bot' }
-        ]);
-        flatListRef.current.scrollToEnd({ animated: true }); // Her yeni mesajda listeyi en alta kaydır
-        if (index === messages.length - 1) {
-          setTimeout(() => {
-            setMessages(prevMessages => prevMessages.slice(0, prevMessages.length - 1));
-            setIsBotTyping(false); // Set bot typing to false after sending all messages
-            if (callback) setTimeout(callback, 1000);
-          }, 2000);
+const processQueue = async () => {
+  if (messageQueue.current.length > 0 && !isPlaying.current) {
+    isPlaying.current = true;
+    const nextMessage = messageQueue.current.shift();
+
+    const audioData = await convertTextToSpeech(nextMessage.text, XI_API_KEY, VOICE_ID);
+    if (audioData) {
+      await playSound(audioData);
+    } else {
+      isPlaying.current = false;
+      processQueue();
+    }
+  }
+};
+
+const playSound = async (audioData) => {
+  try {
+    if (soundRef.current) {
+      await soundRef.current.unloadAsync();
+    }
+    await soundRef.current.loadAsync({ uri: `data:audio/mpeg;base64,${Buffer.from(audioData).toString('base64')}` });
+    await soundRef.current.playAsync();
+    await new Promise((resolve) => {
+      soundRef.current.setOnPlaybackStatusUpdate(status => {
+        if (status.didJustFinish) {
+          isPlaying.current = false;
+          resolve();
         }
-      }, 2000 * (index + 1));
+      });
     });
-  };
+  } catch (error) {
+    console.error('Error playing sound:', error);
+    isPlaying.current = false;
+  }
+};
+
   
   
 
@@ -226,6 +341,8 @@ export default function ChatScreen() {
     sendDelayedMessages([
       { text: `Memnun oldum ${name}. Ben MadamPep`, sender: "bot" },
       { text: "Fincanın soğurken seni biraz daha yakından tanımama izin ver...", sender: "bot" },
+      { text: "Kendini nasıl tanımlıyorsun?", sender: "bot" }
+
     ]);
   };
 
@@ -235,26 +352,30 @@ export default function ChatScreen() {
     setStep(3);
     const genderMessages = selectedGender === "Kadın"
       ? [
-          { text: "İsmin kadar güzelsin...", sender: "bot" },
-          { text: "Bu güzellik, ne zamandır bu Dünya’da yaşıyor?", sender: "bot" }
+          { text: "Biz bizeyiz demek, yaşasın!", sender: "bot" },
+          { text: "Gelelim burcuna… Ne zaman doğdun?", sender: "bot" }
         ]
       : selectedGender === "Erkek"
       ? [
-          { text: "İsmi gibi tam bir beyefendi..", sender: "bot" },
-          { text: "Bu beyefendi kaç yıldır bu Dünya denen kürede yaşıyor?", sender: "bot" }
+          { text: "Tecrübelerime göre erkekler fala biraz daha şüpheci yaklaşıyor, senin için de durum buysa, bugün iş başa düştü demektir…", sender: "bot" },
+          { text: "Gelelim burcuna… Ne zaman doğdun?", sender: "bot" }
         ]
       : [
-          { text: "Özgür ve güçlüyüm diyorsun yani...", sender: "bot" },
-          { text: "Peki ne zamandır Dünya denen bu mavi küredesin?", sender: "bot" }
+          { text: "Ahahaah deme ya", sender: "bot" },
+          { text: "Gelelim burcuna… Ne zaman doğdun?", sender: "bot" }
         ];
     sendMessage(selectedGender, "user");
     sendDelayedMessages(genderMessages, () => setShowDatePicker(true));
   };
 
+  
+
   const handleDateChange = (event, selectedDate) => {
     const currentDate = selectedDate || date;
+    setShowDatePicker(Platform.OS === 'ios');
     setDate(currentDate);
   };
+
 
   const handleDateSubmit = () => {
     setShowDatePicker(false);
@@ -278,7 +399,8 @@ export default function ChatScreen() {
     const zodiacMessages = [
       genderSpecificMessage,
       { text: getZodiacMessage(zodiac), sender: "bot" }, // Burç mesajını ekle
-      { text: "Fincanın iyice soğumuştur artık... Birkaç küçük sorudan sonra başlayabiliriz bence. Tanışma sorularından ne kaldı bir bakalım… Hah! Neyle meşgulsün?", sender: "bot" }
+      { text: "Fincanın iyice soğumuştur artık... Eee.. Tanışma sorularından ne kaldı bir bakalım… Hah! Neyle meşgulsün?", sender: "bot" },
+
     ];
   
     sendDelayedMessages(zodiacMessages, () => setShowJobOptions(true));
@@ -291,7 +413,7 @@ const getZodiacMessage = (zodiac) => {
     case 'Boğa':
       return "Hmm… Boğa… Hayattan keyif almak senin için sanat. Şimdi bu kahve keyfini bir falla süsleyelim.";
     case 'İkizler':
-      return "İkizler! Severim. Entelektüel ve esprili birini görmek harika. Telve about your wishes desem? 🙂";
+      return "İkizler! Severim. Entelektüel ve esprili birini görmek harika.";
     case 'Yengeç':
       return "Sana ustam mı demeliyim sevgili yengeç? Aramızdaki en psişik kişinin sen olduğu bir gerçek.";
     case 'Aslan':
@@ -376,7 +498,7 @@ const handleRelationshipOptionSubmit = async (option) => {
           relationshipMessage = "Musmutlusunuzdur umarım!";
           break;
       case 'Sevgilim var':
-          relationshipMessage = "Musmutlusunuzdur umarım!";
+          relationshipMessage = "Harika...";
           break;    
       default:
           relationshipMessage = "Bu durumda da bir mesajım var.";
@@ -384,15 +506,9 @@ const handleRelationshipOptionSubmit = async (option) => {
   }
 
   sendDelayedMessages([
-      { text: relationshipMessage, sender: "bot" },
-      { text: "Tanışma faslımızın sonuna geldik.", sender: "bot" }
-  ], () => {
-      sendDelayedMessages([
-          { text: "Geldik son ve en önemli soruya", sender: "bot" },
-          { text: "Bu kahveyi ne niyetle içtin.", sender: "bot" },
-          { text: "Neyi merak ediyorsan söyle bana ki falına istediğin niyet ile bakabileyim.", sender: "bot" }
-      ], () => setShowFalSebebiInput(true));
-  });
+    { text: "Peki, geleceğinle ilgili ne merak ediyorsun? Aşk, para, iş, aile, eğitim, sağlık veya başka bi’ şey?", sender: "bot" }
+], () => setShowFalSebebiInput(true));
+
 };
 
   
@@ -426,92 +542,91 @@ const handleRelationshipOptionSubmit = async (option) => {
     }
   };
 
-const handleUploadPhoto = async () => {
-  if (photos.length < 1) {
-    Alert.alert('Hata', 'En az bir fotoğraf yüklemelisin.');
-    return;
-  }
-
-  setLoading(true); // Yükleme işlemi başladığında animasyonu göster
-
-  try {
-    const formData = new FormData();
-    photos.forEach((photo, index) => {
-      formData.append('images', {
-        uri: photo.uri,
-        type: 'image/jpeg',
-        name: `photo_${index}.jpg`,
+  const handleUploadPhoto = async () => {
+    if (photos.length < 1) {
+      Alert.alert('Hata', 'En az bir fotoğraf yüklemelisin.');
+      return;
+    }
+  
+    setLoading(true); // Yükleme işlemi başladığında animasyonu göster
+  
+    try {
+      const formData = new FormData();
+      photos.forEach((photo, index) => {
+        formData.append('images', {
+          uri: photo.uri,
+          type: 'image/jpeg',
+          name: `photo_${index}.jpg`,
+        });
       });
-    });
-
-    console.log('Uploading images:', formData);
-
-    const response = await axios.post('http://35.228.6.241/api/v1/upload', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-        'Accept': 'application/json',
-      },
+  
+      console.log('Uploading images:', formData);
+  
+      const response = await axios.post('http://35.228.6.241/api/v1/upload', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+          'Accept': 'application/json',
+        },
       timeout: 10000, // 10 saniye zaman aşımı süresi
-    });
-
-    console.log('Response:', response.data);
-
-    const { predictions } = response.data;
-    const allValid = predictions.every(prediction => prediction.isCoffeeCup);
-
-    if (!allValid) {
-      Alert.alert('Hata', 'Lütfen sadece kahve fincanınızın resimlerini yükleyin.');
-    } else {
-      await axios.post('https://madampep-backend.vercel.app/api/message', {
-        deviceId, // Cihaz ID'sini gönder
-        inputs: userInputs
-      })
-      .then(response => {
-        console.log('Response:', response.data);
-      })
-      .catch(error => {
-        console.error('Error sending data:', error);
       });
-
-      setShowUploadButton(false);
-      sendMessage("Yükledim", "user");
-
-      // Mesajların doğru şekilde gönderildiğini ve gösterildiğini kontrol edin
-      sendDelayedMessages([
-        { text: "Hmm", sender: "bot" },
-        { text: "Güzel bir fincan.", sender: "bot" },
-        { text: "Şimdi bana biraz zaman tanı ki bu karanlık telveden aydınlık bir yol çıkartabileyim...", sender: "bot", isSpecial: true }
-      ], () => {
-        console.log('All messages sent.');
-        setTimeout(() => {
-          navigation.replace('Falla');
-        }, 3000); // 3 saniye bekleme süresi eklendi
-      });
+  
+      console.log('Response:', response.data);
+  
+      const { predictions } = response.data;
+      const allValid = predictions.every(prediction => prediction.isCoffeeCup);
+  
+      if (!allValid) {
+        Alert.alert('Hata', 'Lütfen sadece kahve fincanınızın resimlerini yükleyin.');
+      } else {
+        await axios.post('https://madampep-backend.vercel.app/api/message', {
+          deviceId, // Cihaz ID'sini gönder
+          inputs: userInputs
+        })
+        .then(response => {
+          console.log('Response:', response.data);
+        })
+        .catch(error => {
+          console.error('Error sending data:', error);
+        });
+  
+        setShowUploadButton(false);
+        sendMessage("Yükledim", "user");
+  
+        // Mesajların doğru şekilde gönderildiğini ve gösterildiğini kontrol edin
+        sendDelayedMessages([
+          { text: "Hmm", sender: "bot" },
+          { text: "Güzel bir fincan.", sender: "bot" },
+          { text: "Şimdi bana biraz zaman tanı ki bu karanlık telveden aydınlık bir yol çıkartabileyim...", sender: "bot", isSpecial: true }
+        ], () => {
+          console.log('All messages sent.');
+          setTimeout(() => {
+            navigation.replace('Falla');
+          }, 3000); // 3 saniye bekleme süresi eklendi
+        });
+      }
+    } catch (error) {
+      console.error('Error uploading images:', error);
+      if (error.response) {
+        console.error('Response data:', error.response.data);
+        console.error('Response status:', error.response.status);
+        console.error('Response headers:', error.response.headers);
+      } else if (error.request) {
+        console.error('Request data:', error.request);
+      } else {
+        console.error('Error message:', error.message);
+      }
+      Alert.alert('Hata', `Resimleri yüklerken bir hata oluştu: ${error.message}`);
+    } finally {
+      setLoading(false); // Yükleme işlemi bittiğinde animasyonu gizle
     }
-  } catch (error) {
-    console.error('Error uploading images:', error);
-    if (error.response) {
-      console.error('Response data:', error.response.data);
-      console.error('Response status:', error.response.status);
-      console.error('Response headers:', error.response.headers);
-    } else if (error.request) {
-      console.error('Request data:', error.request);
-    } else {
-      console.error('Error message:', error.message);
-    }
-    Alert.alert('Hata', `Resimleri yüklerken bir hata oluştu: ${error.message}`);
-  } finally {
-    setLoading(false); // Yükleme işlemi bittiğinde animasyonu gizle
-  }
-};
-
+  };
   
   
-  
+const today = new Date();
+const fourteenYearsAgo = new Date(today.setFullYear(today.getFullYear() - 10));
+const [date, setDate] = useState(fourteenYearsAgo);
 
 
-  
-  
   
   return (
     <ImageBackground source={require('../assets/images/background.png')} style={styles.background}>
@@ -521,7 +636,7 @@ const handleUploadPhoto = async () => {
   behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
 >
       <SafeAreaView style={styles.safeArea}>
-        <CustomHeader zodiacSign={zodiacSign} isBotTyping={isBotTyping} />
+        <CustomHeader zodiacSign={zodiacSign} isBotTyping={isBotTyping} showFrame={true}  />
         <FlatList
   ref={flatListRef}
   data={messages}
@@ -575,23 +690,24 @@ const handleUploadPhoto = async () => {
         </View>
       ) : null}
             {showDatePicker && (
-              <>
-                <View style={styles.datePickerContainer}>
-                  <DateTimePicker
-                    testID="dateTimePicker"
-                    value={date}
-                    mode="date"
-                    display="spinner"
-                    onChange={handleDateChange}
-                    textColor="white" // Yazı rengini beyaz yap
-                    style={styles.datePicker}
-                  />
-                </View>
-                <TouchableOpacity style={styles.submitButton} onPress={handleDateSubmit}>
-                  <Text style={styles.submitButtonText}>Submit</Text>
-                </TouchableOpacity>
-              </>
-            )}
+  <>
+    <View style={styles.datePickerContainer}>
+      <DateTimePicker
+        testID="dateTimePicker"
+        value={date}
+        mode="date"
+        display="spinner"
+        onChange={handleDateChange}
+        textColor="white"
+        style={styles.datePicker}
+      />
+    </View>
+    <TouchableOpacity style={styles.submitButton} onPress={handleDateSubmit}>
+      <Text style={styles.submitButtonText}>Submit</Text>
+    </TouchableOpacity>
+  </>
+)}
+
             {showJobOptions && !isBotTyping && (
               <View style={styles.jobOptionsContainer}>
                 <TouchableOpacity style={styles.jobOptionButton} onPress={() => handleJobOptionSubmit("Okuyorum")}>
@@ -683,7 +799,7 @@ const handleUploadPhoto = async () => {
                 loop
                 style={styles.loadingAnimation}
               />
-              <Text style={styles.loadingText}>Kahve fotoğraların yükleniyor...</Text>
+              <Text style={styles.loadingText}>Kahve fotoğrafların yükleniyor...</Text>
             </BlurView>
           )}
 

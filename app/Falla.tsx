@@ -100,12 +100,12 @@ export default function Falla() {
   return (
     <ImageBackground source={require('../assets/images/background.png')} style={styles.background}>
       <SafeAreaView style={styles.safeArea}>
-        <CustomHeader showBackButton={false} showHeaderOptimals={true} />
+        <CustomHeader showBackButton={false} showHeaderOptimals={true} showFrame={true}/>
         <View style={styles.sandTimerContainer}>
           <View style={styles.messageContainer}>
             <View style={styles.messageBubble}>
               <Text style={styles.messageText}>
-                Ne çok şey var böyle... Aslında şöyle tatlı bi’ şeyler olsa, keyfimiz yerine gelirdi, hızlanırdık biraz...
+              Hımm… Biraz zaman gerek… Süreci hızlandırmak için lokum ikram edebilir veya video izleyebilirsin.
               </Text>
             </View>
           </View>
@@ -116,7 +116,7 @@ export default function Falla() {
             style={styles.sandTimer}
           />
           <View style={styles.timerContainer}>
-            <Text style={styles.timerText}>{formatTime(timer)}</Text>
+            <Text style={styles.timerText}>00:{formatTime(timer)}</Text>
           </View>
           <View style={styles.speedUpContainer}>
             <Text style={styles.speedUpTitle}>Hızlandır</Text>

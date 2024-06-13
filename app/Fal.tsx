@@ -6,6 +6,8 @@ import CustomHeader from '@/components/CustomHeader';
 import axios from 'axios';
 import * as SecureStore from 'expo-secure-store';
 import { v4 as uuidv4 } from 'uuid';
+import { Audio } from 'expo-av';
+import { Buffer } from 'buffer';
 
 export default function Fal() {
   const [messages, setMessages] = useState([]);
@@ -21,6 +23,12 @@ export default function Fal() {
   const [keyboardVisible, setKeyboardVisible] = useState(false);
   const [deviceId, setDeviceId] = useState(route.params?.deviceId || null);
   const [showPaywall, setShowPaywall] = useState(false); // Yeni state
+
+  const isPlaying = useRef(false);
+  const soundRef = useRef(new Audio.Sound());
+  const messageQueue = useRef([]);
+  const XI_API_KEY = 'f9dbeae10b73feaf8374ee06837c40c8';
+  const VOICE_ID = 'OVZaeezkMlYaC2nWNJoy'; // Türkçe ses kimliği
 
   useLayoutEffect(() => {
     navigation.setOptions({
@@ -50,9 +58,12 @@ export default function Fal() {
 
   useEffect(() => {
     if (deviceId) {
-      setIsBotTyping(true);
+      setIsBotTyping(true); // Typing animation'u başlat
       setShowInput(false); // Input'u inaktif yap
-  
+    
+      // İlk başta "typing" mesajı ekle
+      setMessages([{ id: 'typing', isTyping: true, sender: 'bot' }]);
+    
       axios.get('https://madampep-backend.vercel.app/api/ai-response', {
         params: { deviceId }
       })
@@ -65,47 +76,127 @@ export default function Fal() {
           text: paragraph,
           sender: 'bot'
         }));
-  
-        showMessagesSequentially(formattedMessages);
+    
+        sendDelayedMessages(formattedMessages);
       })
       .catch(error => {
         console.error('Error fetching AI response:', error);
+        setIsBotTyping(false); // Hata durumunda typing animation'u durdur
       });
     }
   }, [deviceId]);
+
+  
   
 
-  const showMessagesSequentially = (messages) => {
-    messages.forEach((message, index) => {
-      setTimeout(() => {
-        setMessages(prevMessages => {
-          const updatedMessages = [
-            ...prevMessages, 
-            { ...message, isTyping: true }
-          ];
-          if (flatListRef.current) {
-            flatListRef.current.scrollToEnd({ animated: true });
+  
+  
+
+  const sendDelayedMessages = async (messages, callback) => {
+    if (messages.length > 0) {
+      setMessages(prevMessages => prevMessages.filter(msg => msg.id !== 'typing'));
+    }
+  
+    if (messages.length === 0) {
+      setIsBotTyping(false);
+      return;
+    }
+  
+    for (let index = 0; index < messages.length; index++) {
+      const message = messages[index];
+  
+      setIsBotTyping(true);
+      setMessages(prevMessages => [
+        ...prevMessages,
+        { id: `typing-${index}`, isTyping: true, sender: 'bot' }
+      ]);
+      flatListRef.current.scrollToEnd({ animated: true });
+  
+      await new Promise(resolve => setTimeout(resolve, 2000));
+  
+      setMessages(prevMessages => [
+        ...prevMessages.slice(0, -1),
+        { id: `msg-${Date.now()}`, text: message.text, sender: message.sender }
+      ]);
+      flatListRef.current.scrollToEnd({ animated: true });
+  
+      messageQueue.current.push(message);
+      await processQueue();
+  
+      if (index === messages.length - 1) {
+        setIsBotTyping(false);
+        if (callback) callback();
+      }
+    }
+  };
+  
+  
+
+    
+
+  const processQueue = async () => {
+    if (messageQueue.current.length > 0 && !isPlaying.current) {
+      isPlaying.current = true;
+      const nextMessage = messageQueue.current.shift();
+  
+      const audioData = await convertTextToSpeech(nextMessage.text, XI_API_KEY, VOICE_ID);
+      if (audioData) {
+        await playSound(audioData);
+      } else {
+        isPlaying.current = false;
+        processQueue();
+      }
+    }
+  };
+  
+  const convertTextToSpeech = async (text, apiKey, voiceId) => {
+    const url = `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`;
+  
+    const headers = {
+      "Accept": "audio/mpeg",
+      "Content-Type": "application/json",
+      "xi-api-key": apiKey
+    };
+  
+    const data = {
+      text,
+      "model_id": "eleven_multilingual_v2",
+      "voice_settings": {
+        "stability": 0.5,
+        "similarity_boost": 0.5,
+        "style": 0.0,
+        "use_speaker_boost": true
+      }
+    };
+  
+    try {
+      const response = await axios.post(url, data, { headers, responseType: 'arraybuffer' });
+      return response.data;
+    } catch (error) {
+      console.error('Error converting text to speech:', error);
+      return null;
+    }
+  };
+
+  const playSound = async (audioData) => {
+    try {
+      if (soundRef.current) {
+        await soundRef.current.unloadAsync();
+      }
+      await soundRef.current.loadAsync({ uri: `data:audio/mpeg;base64,${Buffer.from(audioData).toString('base64')}` });
+      await soundRef.current.playAsync();
+      await new Promise((resolve) => {
+        soundRef.current.setOnPlaybackStatusUpdate(status => {
+          if (status.didJustFinish) {
+            isPlaying.current = false;
+            resolve();
           }
-          return updatedMessages;
         });
-        setTimeout(() => {
-          setMessages(prevMessages => {
-            const updatedMessages = prevMessages.map(m => 
-              m.id === message.id ? { ...m, isTyping: false } : m
-            );
-            if (flatListRef.current) {
-              flatListRef.current.scrollToEnd({ animated: true });
-            }
-            return updatedMessages;
-          });
-          if (index === messages.length - 1) {
-            setIsBotTyping(false);
-            setIsLoadingMessages(false);
-            setShowInput(true); // İlk mesajlar geldikten sonra input alanını aktif yap
-          }
-        }, 2000);
-      }, index * 4000);
-    });
+      });
+    } catch (error) {
+      console.error('Error playing sound:', error);
+      isPlaying.current = false;
+    }
   };
 
   useEffect(() => {
@@ -133,40 +224,72 @@ export default function Fal() {
     };
   }, []);
 
+  // Kullanıcı mesajını gönder ve paywall'u göster
   const sendMessage = async (text) => {
     if (text.trim()) {
       const userMessage = { id: `user-${Date.now()}`, text, sender: 'user' };
       setMessages(prevMessages => [...prevMessages, userMessage]);
       setInput('');
-      setShowPaywall(true); // Paywall'u göster
+      setIsBotTyping(true);
       setShowInput(false); // Input'u gizle
+  
+      console.log('User message sent:', text); // Debugging için ekleyin
+  
+      try {
+        const response = await axios.post('https://madampep-backend.vercel.app/api/short-message', {
+          deviceId,
+          inputs: [{ question: 'Kullanıcı Mesajı', answer: text }]
+        });
+        const aiMessage = response.data.message;
+        console.log('AI Response:', aiMessage); // Log AI response
+        const messageParagraphs = aiMessage.split('\n').filter(paragraph => paragraph.trim() !== '');
+        const formattedMessages = messageParagraphs.map((paragraph, index) => ({
+          id: `ai-${index}-${Date.now()}`,
+          text: paragraph,
+          sender: 'bot'
+        }));
+        sendDelayedMessages(formattedMessages, () => {
+          setShowInput(true); // Mesajlar geldikten sonra input'u göster
+        });
+      } catch (error) {
+        console.error('Error sending data:', error);
+        setIsBotTyping(false);
+      }
     }
   };
+  
 
-  const handlePaywallClick = async () => {
-    setShowPaywall(false); // Paywall'u gizle
-    setIsBotTyping(true);
+// Paywall'a tıklandığında çağrılan fonksiyon
+const handlePaywallClick = async () => {
+  console.log('Paywall clicked'); // Debugging için ekleyin
+  setShowPaywall(false); // Paywall'u gizle
+  setIsBotTyping(true);
+  const userMessage = input;
 
-    try {
-      const response = await axios.post('https://madampep-backend.vercel.app/api/short-message', {
-        deviceId,
-        inputs: [{ question: 'Kullanıcı Mesajı', answer: input }]
-      });
-      const aiMessage = response.data.message;
-      console.log('AI Response:', aiMessage); // Log AI response
-      const messageParagraphs = aiMessage.split('\n').filter(paragraph => paragraph.trim() !== '');
-      const formattedMessages = messageParagraphs.map((paragraph, index) => ({
-        id: `ai-${index}-${Date.now()}`,
-        text: paragraph,
-        sender: 'bot'
-      }));
-      showMessagesSequentially(formattedMessages);
-    } catch (error) {
-      console.error('Error sending data:', error);
-      setIsBotTyping(false);
-    }
-  };
+  try {
+    const response = await axios.post('https://madampep-backend.vercel.app/api/short-message', {
+      deviceId,
+      inputs: [{ question: 'Kullanıcı Mesajı', answer: userMessage }]
+    });
+    const aiMessage = response.data.message;
+    console.log('AI Response:', aiMessage); // Log AI response
+    const messageParagraphs = aiMessage.split('\n').filter(paragraph => paragraph.trim() !== '');
+    const formattedMessages = messageParagraphs.map((paragraph, index) => ({
+      id: `ai-${index}-${Date.now()}`,
+      text: paragraph,
+      sender: 'bot'
+    }));
+    sendDelayedMessages(formattedMessages, () => {
+      setShowInput(true); // Mesajlar geldikten sonra input'u göster
+    });
+  } catch (error) {
+    console.error('Error sending data:', error);
+    setIsBotTyping(false);
+  }
+};
 
+  
+  
   const renderMessage = ({ item }) => (
     <View style={[
       styles.messageContainer, 
@@ -189,53 +312,56 @@ export default function Fal() {
       {item.sender === "user" && <View style={styles.circle} />}
     </View>
   );
+  
+  
+  
 
   return (
     <ImageBackground source={require('../assets/images/background.png')} style={styles.background}>
-     <KeyboardAvoidingView
-        style={{ flex: 1 }}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      >
-        <SafeAreaView style={styles.safeArea}>
-          <CustomHeader isBotTyping={isBotTyping} />
-          <View style={{ flex: 1 }}>
-            <FlatList
-              ref={flatListRef}
-              data={messages}
-              renderItem={renderMessage}
-              keyExtractor={item => item.id}
-              style={styles.messageList}
-              contentContainerStyle={[styles.messageListContent, { paddingBottom: keyboardHeight }]}
-            />
-            {showPaywall && ( // showPaywall state'ine göre lokumikramet.png'yi göster
-              <TouchableOpacity 
-                onPress={handlePaywallClick} 
-                style={styles.paywallContainer}
-                disabled={isLoadingMessages}
-              >
-                <Image source={require('../assets/images/lokumikramet.png')} style={styles.paywallImage} />
+   <KeyboardAvoidingView
+      style={{ flex: 1 }}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+    >
+      <SafeAreaView style={styles.safeArea}>
+        <CustomHeader isBotTyping={isBotTyping} />
+        <View style={{ flex: 1 }}>
+          <FlatList
+            ref={flatListRef}
+            data={messages}
+            renderItem={renderMessage}
+            keyExtractor={item => item.id}
+            style={styles.messageList}
+            contentContainerStyle={[styles.messageListContent, { paddingBottom: keyboardHeight }]}
+          />
+          {/* {showPaywall && ( // showPaywall state'ine göre lokumikramet.png'yi göster
+  <TouchableOpacity 
+    onPress={handlePaywallClick} 
+    style={styles.paywallContainer}
+    disabled={isLoadingMessages}
+  >
+    <Image source={require('../assets/images/lokumikramet.png')} style={styles.paywallImage} />
+  </TouchableOpacity>
+)} */}
+        {showInput && (
+            <View style={styles.inputContainer}>
+              <TextInput
+                style={styles.input}
+                placeholder="Mesajınızı yazın..."
+                placeholderTextColor="#888"
+                value={input}
+                onChangeText={setInput}
+                onSubmitEditing={() => sendMessage(input)}
+              />
+              <TouchableOpacity style={styles.sendButton} onPress={() => sendMessage(input)}>
+                <Text style={styles.sendButtonText}>Gönder</Text>
               </TouchableOpacity>
-            )}
+            </View>
+          )}
+        </View>
+      </SafeAreaView>
+    </KeyboardAvoidingView>
+  </ImageBackground>
 
-            {showInput && (
-              <View style={styles.inputContainer}>
-                <TextInput
-                  style={styles.input}
-                  placeholder="Mesajınızı yazın..."
-                  placeholderTextColor="#888"
-                  value={input}
-                  onChangeText={setInput}
-                  onSubmitEditing={() => sendMessage(input)}
-                />
-                <TouchableOpacity style={styles.sendButton} onPress={() => sendMessage(input)}>
-                  <Text style={styles.sendButtonText}>Gönder</Text>
-                </TouchableOpacity>
-              </View>
-            )}
-          </View>
-        </SafeAreaView>
-      </KeyboardAvoidingView>
-    </ImageBackground>
   );
 }
 
