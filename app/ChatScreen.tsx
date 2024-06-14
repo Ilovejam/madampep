@@ -235,78 +235,82 @@ useEffect(() => {
   };
   
   const sendDelayedMessages = async (messages, callback) => {
-    setIsBotTyping(true); // Set bot typing to true before sending messages
+    setIsBotTyping(true);
   
-    // Eğer gönderilecek mesajlar yoksa typing animasyonunu göstermemek için kontrol ekliyoruz.
-    if (messages.length === 0) {
-      setIsBotTyping(false);
-      return;
-    }
-    
     for (let index = 0; index < messages.length; index++) {
       const message = messages[index];
   
-      // Typing animation eklemek için geçici bir loading mesajı ekliyoruz
+      // Yazma animasyonunu başlat
       setMessages(prevMessages => [
         ...prevMessages,
         { id: `loading-${prevMessages.length + 1}-${Date.now()}`, text: '...', sender: 'bot' }
       ]);
-      flatListRef.current.scrollToEnd({ animated: true }); // Her yeni mesajda listeyi en alta kaydır
   
-      await new Promise(resolve => setTimeout(resolve, 2000)); // 2 saniye bekletiyoruz (typing süresi)
+      // Ses dosyasını önceden yükle
+      const audioData = await convertTextToSpeech(message.text, XI_API_KEY, VOICE_ID);
+      if (!audioData) {
+        console.error('Ses dosyası yüklenemedi');
+        continue;
+      }
   
+      // Yazma animasyonunu kaldır ve gerçek mesajı ekle
       setMessages(prevMessages => [
-        ...prevMessages.slice(0, prevMessages.length - 1), // Loading mesajını kaldırıyoruz
-        { id: `msg-${prevMessages.length + 1}-${Date.now()}`, text: message.text, sender: message.sender }
+        ...prevMessages.slice(0, prevMessages.length - 1),
+        { id: `msg-${prevMessages.length}-${Date.now()}`, text: message.text, sender: 'bot' }
       ]);
-      flatListRef.current.scrollToEnd({ animated: true }); // Her yeni mesajda listeyi en alta kaydır
   
-      messageQueue.current.push(message); // Mesajları kuyruğa ekleyin
-      await processQueue(); // Kuyruğu işleme başlat ve bitene kadar bekle
+      // Mesajı gösterdikten sonra hemen sesi oynat ve bitene kadar bekle
+      await playSound(audioData);
   
-      if (index === messages.length - 1) {
-        setIsBotTyping(false); // Set bot typing to false after sending all messages
-        if (callback) setTimeout(callback, 1000);
+      flatListRef.current.scrollToEnd({ animated: true });
+    }
+  
+    setIsBotTyping(false);
+    if (callback) setTimeout(callback, 1000);
+  };
+  
+  
+  const processQueue = async () => {
+    while (messageQueue.current.length > 0 && !isPlaying.current) {
+      const nextMessage = messageQueue.current.shift();
+  
+      // Ses dosyasını dönüştür ve oynat
+      const audioData = await convertTextToSpeech(nextMessage.text, XI_API_KEY, VOICE_ID);
+      if (audioData) {
+        await playSound(audioData);
+        // Mesajı gönder
+        setMessages(prevMessages => [
+          ...prevMessages,
+          { id: `msg-${prevMessages.length + 1}-${Date.now()}`, text: nextMessage.text, sender: 'bot' }
+        ]);
+      } else {
+        console.error('Ses dosyası yüklenemedi');
       }
     }
   };
   
 
-const processQueue = async () => {
-  if (messageQueue.current.length > 0 && !isPlaying.current) {
-    isPlaying.current = true;
-    const nextMessage = messageQueue.current.shift();
-
-    const audioData = await convertTextToSpeech(nextMessage.text, XI_API_KEY, VOICE_ID);
-    if (audioData) {
-      await playSound(audioData);
-    } else {
-      isPlaying.current = false;
-      processQueue();
-    }
-  }
-};
-
-const playSound = async (audioData) => {
-  try {
-    if (soundRef.current) {
-      await soundRef.current.unloadAsync();
-    }
-    await soundRef.current.loadAsync({ uri: `data:audio/mpeg;base64,${Buffer.from(audioData).toString('base64')}` });
-    await soundRef.current.playAsync();
-    await new Promise((resolve) => {
-      soundRef.current.setOnPlaybackStatusUpdate(status => {
-        if (status.didJustFinish) {
-          isPlaying.current = false;
-          resolve();
-        }
+  const playSound = async (audioData) => {
+    try {
+      if (soundRef.current) {
+        await soundRef.current.unloadAsync();
+      }
+      await soundRef.current.loadAsync({ uri: `data:audio/mpeg;base64,${Buffer.from(audioData).toString('base64')}` });
+      await soundRef.current.playAsync();
+      return new Promise((resolve) => {
+        soundRef.current.setOnPlaybackStatusUpdate(status => {
+          if (status.didJustFinish) {
+            resolve();
+          }
+        });
       });
-    });
-  } catch (error) {
-    console.error('Error playing sound:', error);
-    isPlaying.current = false;
-  }
-};
+    } catch (error) {
+      console.error('Error playing sound:', error);
+      isPlaying.current = false;
+    }
+  };
+  
+  
 
   
   
@@ -387,17 +391,8 @@ const playSound = async (audioData) => {
     const zodiac = getZodiacSign(day, month);
     setZodiacSign(zodiacSigns[zodiac] || 'Avatar');
   
-    let genderSpecificMessage;
-    if (gender === "Kadın") {
-      genderSpecificMessage = { text: `${zodiac} Burcu Kadını...`, sender: "bot" };
-    } else if (gender === "Erkek") {
-      genderSpecificMessage = { text: `${zodiac} Burcu Erkeği...`, sender: "bot" };
-    } else {
-      genderSpecificMessage = { text: `${zodiac} Burcu...`, sender: "bot" }; // Cinsiyet belirtilmemişse genel mesaj
-    }
   
     const zodiacMessages = [
-      genderSpecificMessage,
       { text: getZodiacMessage(zodiac), sender: "bot" }, // Burç mesajını ekle
       { text: "Fincanın iyice soğumuştur artık... Eee.. Tanışma sorularından ne kaldı bir bakalım… Hah! Neyle meşgulsün?", sender: "bot" },
 
@@ -470,7 +465,7 @@ const getZodiacMessage = (zodiac) => {
 
     sendDelayedMessages([
         { text: jobMessage, sender: "bot" }, // Job message eklendi
-        { text: "Peki... Aşk hayatın ne alemde?", sender: "bot" }
+        { text: "Aşk hayatın ne alemde?", sender: "bot" }
     ], () => setShowRelationshipOptions(true));
 };
 
@@ -482,7 +477,7 @@ const handleRelationshipOptionSubmit = async (option) => {
 
   let relationshipMessage;
   switch (option) {
-      case 'Biri yok':
+      case 'Yalnızım':
           relationshipMessage = "Bekarlık sultanlıktır.";
           break;
       case 'Aslında biri var ama...':
@@ -506,8 +501,10 @@ const handleRelationshipOptionSubmit = async (option) => {
   }
 
   sendDelayedMessages([
+    { text: relationshipMessage, sender: "bot" },
     { text: "Peki, geleceğinle ilgili ne merak ediyorsun? Aşk, para, iş, aile, eğitim, sağlık veya başka bi’ şey?", sender: "bot" }
-], () => setShowFalSebebiInput(true));
+  ], () => setShowFalSebebiInput(true));
+
 
 };
 
@@ -517,8 +514,7 @@ const handleRelationshipOptionSubmit = async (option) => {
     setUserInputs(prevInputs => [...prevInputs, { question: "Fal Sebebi", answer: falSebebi }]);
     setShowFalSebebiInput(false);
     sendDelayedMessages([
-      { text: "Kahveler içildi ise şimdi gelelim hoş muhabbete.", sender: "bot" },
-      { text: "Kahve fincanını benimle paylaş ki, o karanlık telvelerden aydınlık bir yol bulabileyim.", sender: "bot" }
+      { text: "Tamam! Artık başlayabiliriz.", sender: "bot" },
     ], () => setShowUploadButton(true));
     };
   
@@ -593,16 +589,7 @@ const handleRelationshipOptionSubmit = async (option) => {
         sendMessage("Yükledim", "user");
   
         // Mesajların doğru şekilde gönderildiğini ve gösterildiğini kontrol edin
-        sendDelayedMessages([
-          { text: "Hmm", sender: "bot" },
-          { text: "Güzel bir fincan.", sender: "bot" },
-          { text: "Şimdi bana biraz zaman tanı ki bu karanlık telveden aydınlık bir yol çıkartabileyim...", sender: "bot", isSpecial: true }
-        ], () => {
-          console.log('All messages sent.');
-          setTimeout(() => {
-            navigation.replace('Falla');
-          }, 3000); // 3 saniye bekleme süresi eklendi
-        });
+        
       }
     } catch (error) {
       console.error('Error uploading images:', error);
@@ -626,7 +613,13 @@ const today = new Date();
 const fourteenYearsAgo = new Date(today.setFullYear(today.getFullYear() - 10));
 const [date, setDate] = useState(fourteenYearsAgo);
 
-
+const handleBackPress = () => {
+  if (soundRef.current) {
+    soundRef.current.stopAsync();  // Çalan sesi durdur
+  }
+  
+  navigation.navigate('Dashboard');  // Kullanıcıyı Dashboard ekranına yönlendir
+};
   
   return (
     <ImageBackground source={require('../assets/images/background.png')} style={styles.background}>
@@ -636,7 +629,8 @@ const [date, setDate] = useState(fourteenYearsAgo);
   behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
 >
       <SafeAreaView style={styles.safeArea}>
-        <CustomHeader zodiacSign={zodiacSign} isBotTyping={isBotTyping} showFrame={true}  />
+        <CustomHeader zodiacSign={zodiacSign} onBackPress={handleBackPress} isBotTyping={isBotTyping} showFrame={true}  />
+
         <FlatList
   ref={flatListRef}
   data={messages}
@@ -703,7 +697,7 @@ const [date, setDate] = useState(fourteenYearsAgo);
       />
     </View>
     <TouchableOpacity style={styles.submitButton} onPress={handleDateSubmit}>
-      <Text style={styles.submitButtonText}>Submit</Text>
+      <Text style={styles.submitButtonText}>Onayla</Text>
     </TouchableOpacity>
   </>
 )}
@@ -726,8 +720,8 @@ const [date, setDate] = useState(fourteenYearsAgo);
             )}
             {showRelationshipOptions && !isBotTyping && (
               <View style={styles.relationshipOptionsContainer}>
-                <TouchableOpacity style={styles.relationshipOptionButton} onPress={() => handleRelationshipOptionSubmit("Biri yok")}>
-                  <Text style={styles.buttonText}>Biri yok</Text>
+                <TouchableOpacity style={styles.relationshipOptionButton} onPress={() => handleRelationshipOptionSubmit("Yalnızım")}>
+                  <Text style={styles.buttonText}>Yalnızım</Text>
                 </TouchableOpacity>
                 <TouchableOpacity style={styles.relationshipOptionButton} onPress={() => handleRelationshipOptionSubmit("Sevgilim var")}>
                   <Text style={styles.buttonText}>Sevgilim Var</Text>

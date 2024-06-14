@@ -36,26 +36,8 @@ export default function HomeScreen() {
     getDeviceId();
   }, []);
 
-  useEffect(() => {
-    async function playBackgroundMusic() {
-      try {
-        const { sound } = await Audio.Sound.createAsync(require('../assets/back.mp3'));
-        await sound.setIsLoopingAsync(true); // Müziği loop yaparak çalmak
-        await sound.playAsync();
-        backgroundMusicRef.current = sound;
-      } catch (error) {
-        console.error('Error loading and playing sound', error);
-      }
-    }
-
-    playBackgroundMusic();
-
-    return () => {
-      if (backgroundMusicRef.current) {
-        backgroundMusicRef.current.unloadAsync();
-      }
-    };
-  }, []);
+  
+  
 
   switch (currentScreen) {
     case 'MelekKartları':

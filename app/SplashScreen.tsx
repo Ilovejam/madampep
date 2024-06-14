@@ -6,22 +6,25 @@ import { Audio } from 'expo-av';
 export default function SplashScreen({ onAnimationEnd }) {
   const animationRef = useRef(null);
   const textOpacity = useRef(new Animated.Value(0)).current;
+  const soundRef = useRef(null);
 
   useEffect(() => {
     async function playSound() {
       const { sound } = await Audio.Sound.createAsync(
         require('../assets/splashsound.mp3')
       );
+      soundRef.current = sound;
       await sound.playAsync();
 
-      // 7 saniye sonra müziği durdur ve UploadImage ekranına geç
+      // 7 saniye sonra müziği durdur ve başka bir ekranına geç
       setTimeout(() => {
         sound.unloadAsync();
         onAnimationEnd();
-      }, 7000);
+      }, 7000); // Ses dosyasının uzunluğuna göre süreyi ayarlayın
     }
 
     playSound();
+
 
     // İlk yazı animasyonu
     Animated.timing(textOpacity, {
@@ -33,6 +36,12 @@ export default function SplashScreen({ onAnimationEnd }) {
     if (animationRef.current) {
       animationRef.current.play();
     }
+
+    return () => {
+      if (soundRef.current) {
+        soundRef.current.unloadAsync();
+      }
+    };
   }, [textOpacity, onAnimationEnd]);
 
   return (
@@ -47,7 +56,6 @@ export default function SplashScreen({ onAnimationEnd }) {
             style={styles.mandalaAnimation}
           />
           <LottieView
-            ref={animationRef}
             source={require('../assets/eye.json')}
             autoPlay
             loop
@@ -78,8 +86,8 @@ const styles = StyleSheet.create({
   },
   animationContainer: {
     position: 'relative',
-    width: 300, // Lottie animasyonunu büyüttük
-    height: 300, // Lottie animasyonunu büyüttük
+    width: 300,
+    height: 300,
     marginTop: 80,
   },
   mandalaAnimation: {
@@ -94,7 +102,7 @@ const styles = StyleSheet.create({
     height: '45%',
   },
   textContainer: {
-    marginTop: 30, // Animasyon ile metin arasındaki boşluğu artırdık
+    marginTop: 30,
   },
   title: {
     color: '#FBEFD1',

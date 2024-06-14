@@ -23,7 +23,7 @@ const getZodiacSign = (day, month) => {
   return 'unknown';
 };
 
-export default function CustomHeader({ isBotTyping, showFrame = false, showBackButton = true, showHeaderOptimals = true }) {
+export default function CustomHeader({ isBotTyping,onBackPress, showFrame = false, showBackButton = true, showHeaderOptimals = true }) {
   const navigation = useNavigation();
   const [currentZodiac, setCurrentZodiac] = useState(null);
   const [isProfileDataAvailable, setIsProfileDataAvailable] = useState(false);
@@ -89,7 +89,7 @@ export default function CustomHeader({ isBotTyping, showFrame = false, showBackB
   return (
     <View style={styles.header}>
       {showBackButton && (
-        <TouchableOpacity onPress={handleBackPress}>
+        <TouchableOpacity onPress={onBackPress || handleBackPress}>
           <Image source={require('../assets/icons/right-arrow.png')} style={[styles.backIcon, styles.rotatedIcon]} />
         </TouchableOpacity>
       )}

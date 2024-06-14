@@ -31,6 +31,7 @@ export default function RootLayout() {
     async function playBackgroundMusic() {
       try {
         const { sound } = await Audio.Sound.createAsync(require('../assets/back.mp3'));
+        await sound.setVolumeAsync(0.30); // Ses seviyesini %25'e indir
         await sound.setIsLoopingAsync(true); // Müziği loop yaparak çalmak
         await sound.playAsync();
         backgroundMusicRef.current = sound;
