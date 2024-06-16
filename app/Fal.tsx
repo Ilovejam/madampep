@@ -307,20 +307,23 @@ const renderMessage = ({ item }) => (
             </TouchableOpacity>
           )}
 
-          <View style={styles.inputContainer}>
-            <TextInput
-              style={styles.input}
-              placeholder="Mesajınızı yazın..."
-              placeholderTextColor="#888"
-              value={input}
-              onChangeText={setInput}
-              onSubmitEditing={() => sendMessage(input)}
-              editable={!isBotTyping} // Input alanını bot yazarken devre dışı bırakın
-            />
-            <TouchableOpacity style={styles.sendButton} onPress={() => sendMessage(input)} disabled={isBotTyping}>
-              <Text style={styles.sendButtonText}>Gönder</Text>
-            </TouchableOpacity>
-          </View>
+{!isBotTyping && (
+  <View style={styles.inputContainer}>
+    <TextInput
+      style={styles.input}
+      placeholder="Mesajınızı yazın..."
+      placeholderTextColor="#888"
+      value={input}
+      onChangeText={setInput}
+      onSubmitEditing={() => sendMessage(input)}
+      editable={!isBotTyping} // Input alanını bot yazarken devre dışı bırakın
+    />
+    <TouchableOpacity style={styles.sendButton} onPress={() => sendMessage(input)} disabled={isBotTyping}>
+      <Text style={styles.sendButtonText}>Gönder</Text>
+    </TouchableOpacity>
+  </View>
+)}
+
         </SafeAreaView>
       </KeyboardAvoidingView>
     </ImageBackground>
