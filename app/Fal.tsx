@@ -12,7 +12,6 @@ import { Buffer } from 'buffer';
 export default function Fal() {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
-  const [showInput, setShowInput] = useState(false);
   const flatListRef = useRef(null);
   const navigation = useNavigation();
   const route = useRoute();
@@ -22,11 +21,10 @@ export default function Fal() {
   const [isLoadingMessages, setIsLoadingMessages] = useState(true);
   const [keyboardVisible, setKeyboardVisible] = useState(false);
   const [deviceId, setDeviceId] = useState(route.params?.deviceId || null);
-  const [showPaywall, setShowPaywall] = useState(false); // Yeni state
+  const [showPaywall, setShowPaywall] = useState(false);
   const messageHeights = useRef({});
 
   const isPlaying = useRef(false);
-  
   const soundRef = useRef(new Audio.Sound());
   const messageQueue = useRef([]);
   const XI_API_KEY = 'f9dbeae10b73feaf8374ee06837c40c8';
@@ -61,8 +59,6 @@ export default function Fal() {
   useEffect(() => {
     if (deviceId) {
       setIsBotTyping(true); // Typing animasyonunu başlat
-      setShowInput(false); // Input'u inaktif yap
-  
       // İlk başta "typing" mesajı ekle
       setMessages([{ id: 'typing', isTyping: true, sender: 'bot' }]);
   
@@ -80,7 +76,7 @@ export default function Fal() {
         }));
   
         sendDelayedMessages(additionalMessages, () => {
-          setShowInput(true); // Mesajlar geldikten sonra input'u aktif yap
+          setIsBotTyping(false); // Mesajlar geldikten sonra typing animasyonunu durdur
         });
       })
       .catch(error => {
@@ -89,11 +85,6 @@ export default function Fal() {
       });
     }
   }, [deviceId]);
-  
-  
-  
-
-  
   
   const sendDelayedMessages = async (messages, callback) => {
     if (messages.length === 0) {
@@ -104,77 +95,49 @@ export default function Fal() {
     for (let index = 0; index < messages.length; index++) {
       const message = messages[index];
   
-      // Her mesajdan önce typing animasyonunu başlat
       setMessages(prevMessages => [
         ...prevMessages.filter(msg => !msg.isTyping), // Önceki typing mesajını temizle
         { id: `typing-${index}`, isTyping: true, sender: 'bot' } // Yeni typing mesajı ekle
       ]);
-  
-      if (flatListRef.current) {
-        flatListRef.current.scrollToEnd({ animated: true });
-      }
-  
-      // Animasyonun görünmesi için kısa bir süre bekle
+
       await new Promise(resolve => setTimeout(resolve, 2000));
   
-      // Ses dosyasını önceden yükle
       const audioData = await convertTextToSpeech(message.text, XI_API_KEY, VOICE_ID);
       if (!audioData) {
         console.error('Ses dosyası yüklenemedi');
         continue;
       }
   
-      // Typing animasyonunu kaldır ve gerçek mesajı ekle
       setMessages(prevMessages => [
         ...prevMessages.filter(msg => !msg.isTyping),
         { id: `msg-${Date.now()}`, text: message.text, sender: 'bot' }
       ]);
   
-      // Mesajı gösterdikten sonra hemen sesi oynat ve bitene kadar bekle
       await playSound(audioData);
-  
-      if (flatListRef.current) {
-        flatListRef.current.scrollToEnd({ animated: true });
-      }
+
+      // Liste yüksekliğini kontrol et ve gerekirse aşağı kaydır
+      checkContentHeight();
     }
   
     setIsBotTyping(false);
     if (callback) callback();
   };
   
+  const checkContentHeight = () => {
+    if (flatListRef.current) {
+      flatListRef.current.scrollToEnd({ animated: true });
+    }
+  };
 
-
-
-const processQueue = async () => {
-  while (messageQueue.current.length > 0 && !isPlaying.current) {
-      isPlaying.current = true;
-      const nextMessage = messageQueue.current.shift();
-
-      const audioData = await convertTextToSpeech(nextMessage.text, XI_API_KEY, VOICE_ID);
-      if (audioData) {
-          await playSound(audioData);
-          setMessages(prevMessages => [
-              ...prevMessages,
-              { id: `msg-${Date.now()}`, text: nextMessage.text, sender: 'bot' }
-          ]);
-          flatListRef.current.scrollToEnd({ animated: true });
-      } else {
-          console.error('Ses dosyası yüklenemedi');
-          isPlaying.current = false;
-      }
-  }
-};
-
-  
   const convertTextToSpeech = async (text, apiKey, voiceId) => {
     const url = `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`;
-  
+
     const headers = {
       "Accept": "audio/mpeg",
       "Content-Type": "application/json",
       "xi-api-key": apiKey
     };
-  
+
     const data = {
       text,
       "model_id": "eleven_multilingual_v2",
@@ -185,7 +148,7 @@ const processQueue = async () => {
         "use_speaker_boost": true
       }
     };
-  
+
     try {
       const response = await axios.post(url, data, { headers, responseType: 'arraybuffer' });
       return response.data;
@@ -202,10 +165,9 @@ const processQueue = async () => {
       }
       await soundRef.current.loadAsync({ uri: `data:audio/mpeg;base64,${Buffer.from(audioData).toString('base64')}` });
       await soundRef.current.playAsync();
-      await new Promise((resolve) => {
+      return new Promise((resolve) => {
         soundRef.current.setOnPlaybackStatusUpdate(status => {
           if (status.didJustFinish) {
-            isPlaying.current = false;
             resolve();
           }
         });
@@ -217,18 +179,14 @@ const processQueue = async () => {
   };
 
   useEffect(() => {
-    if (flatListRef.current) {
-      flatListRef.current.scrollToEnd({ animated: true });
-    }
+    checkContentHeight();
   }, [messages]);
 
   useEffect(() => {
     const keyboardDidShowListener = Keyboard.addListener('keyboardDidShow', (e) => {
       setKeyboardHeight(e.endCoordinates.height);
       setKeyboardVisible(true);
-      if (flatListRef.current) {
-        flatListRef.current.scrollToEnd({ animated: true });
-      }
+      checkContentHeight();
     });
     const keyboardDidHideListener = Keyboard.addListener('keyboardDidHide', () => {
       setKeyboardHeight(0);
@@ -248,15 +206,12 @@ const processQueue = async () => {
       setMessages(prevMessages => {
         const newMessages = [...prevMessages, userMessage];
         setTimeout(() => {
-          if (flatListRef.current) {
-            flatListRef.current.scrollToEnd({ animated: true });
-          }
+          checkContentHeight();
         }, 100); // FlatList'in yeni mesajları render etmesi için kısa bir süre bekle
         return newMessages;
       });
       setInput('');
       setIsBotTyping(true);
-      setShowInput(false); // Input'u gizle
       setShowPaywall(true); // Paywall'ı göster
   
       try {
@@ -272,7 +227,7 @@ const processQueue = async () => {
           sender: 'bot'
         }));
         sendDelayedMessages(formattedMessages, () => {
-          setShowInput(true); // Mesajlar geldikten sonra input'u göster
+          setIsBotTyping(false); // Mesajlar geldikten sonra typing animasyonunu durdur
         });
       } catch (error) {
         console.error('Error sending data:', error);
@@ -280,19 +235,10 @@ const processQueue = async () => {
       }
   
       setTimeout(() => {
-        if (flatListRef.current) {
-          flatListRef.current.scrollToEnd({ animated: true });
-        }
+        checkContentHeight();
       }, 0);
     }
   };
-  
-  
-  
-  
-
-  
-  
 
 // Paywall'a tıklandığında çağrılan fonksiyon
 const handlePaywallClick = () => {
@@ -300,9 +246,6 @@ const handlePaywallClick = () => {
   setShowPaywall(false); // Paywall'u ekrandan kaldır
 };
 
-
-  
-  
 const renderMessage = ({ item }) => (
     <View style={[
     styles.messageContainer, 
@@ -336,63 +279,53 @@ const renderMessage = ({ item }) => (
   };
   
 
-  
-
   return (
     <ImageBackground source={require('../assets/images/background.png')} style={styles.background}>
-   <KeyboardAvoidingView
-      style={{ flex: 1 }}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-    >
-      <SafeAreaView style={styles.safeArea}>
-      <CustomHeader isBotTyping={isBotTyping} onBackPress={handleBackPress} />
-        <View style={{ flex: 1 }}>
-        <FlatList
-  ref={flatListRef}
-  data={messages}
-  renderItem={renderMessage}
-  keyExtractor={item => item.id.toString()}
-  style={styles.messageList}
-  contentContainerStyle={{ paddingBottom: 80 }} // Alt kısma boşluk ekleyin
-  onContentSizeChange={() => flatListRef.current.scrollToEnd({ animated: true })}
-  onLayout={() => flatListRef.current.scrollToEnd({ animated: true })}
-/>
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      >
+        <SafeAreaView style={styles.safeArea}>
+          <CustomHeader isBotTyping={isBotTyping} onBackPress={handleBackPress} />
+          <FlatList
+            ref={flatListRef}
+            data={messages}
+            renderItem={renderMessage}
+            keyExtractor={item => item.id.toString()}
+            style={styles.messageList}
+            contentContainerStyle={{ paddingBottom: 80 }} // Alt kısma boşluk ekleyin
+            onContentSizeChange={checkContentHeight}
+            onLayout={checkContentHeight}
+          />
 
-
-
-
-         {showPaywall && (
-  <TouchableOpacity 
-    onPress={handlePaywallClick} 
-    style={styles.paywallContainer}
-  >
-    <Image source={require('../assets/images/lokumikramet.png')} style={styles.paywallImage} />
-  </TouchableOpacity>
-)}
-
-        {showInput && (
-            <View style={styles.inputContainer}>
-              <TextInput
-                style={styles.input}
-                placeholder="Mesajınızı yazın..."
-                placeholderTextColor="#888"
-                value={input}
-                onChangeText={setInput}
-                onSubmitEditing={() => sendMessage(input)}
-              />
-              <TouchableOpacity style={styles.sendButton} onPress={() => sendMessage(input)}>
-                <Text style={styles.sendButtonText}>Gönder</Text>
-              </TouchableOpacity>
-            </View>
+          {showPaywall && (
+            <TouchableOpacity 
+              onPress={handlePaywallClick} 
+              style={styles.paywallContainer}
+            >
+              <Image source={require('../assets/images/lokumikramet.png')} style={styles.paywallImage} />
+            </TouchableOpacity>
           )}
-        </View>
-      </SafeAreaView>
-    </KeyboardAvoidingView>
-  </ImageBackground>
 
+          <View style={styles.inputContainer}>
+            <TextInput
+              style={styles.input}
+              placeholder="Mesajınızı yazın..."
+              placeholderTextColor="#888"
+              value={input}
+              onChangeText={setInput}
+              onSubmitEditing={() => sendMessage(input)}
+              editable={!isBotTyping} // Input alanını bot yazarken devre dışı bırakın
+            />
+            <TouchableOpacity style={styles.sendButton} onPress={() => sendMessage(input)} disabled={isBotTyping}>
+              <Text style={styles.sendButtonText}>Gönder</Text>
+            </TouchableOpacity>
+          </View>
+        </SafeAreaView>
+      </KeyboardAvoidingView>
+    </ImageBackground>
   );
 }
-
 
 
 const styles = StyleSheet.create({
@@ -408,15 +341,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     height: 350, // Height değerini azaltın
     backgroundColor: 'rgba(0, 0, 0, 0)', // Arka planı şeffaf yapmak için
-
   },
-  
-paywallImage: {
-  width: '100%',
-  height: '100%',
-  resizeMode: 'contain',
-},
-
+  paywallImage: {
+    width: '100%',
+    height: '100%',
+    resizeMode: 'contain',
+  },
   paywallBox: {
     backgroundColor: 'rgba(66, 66, 66, 0.05)',
     borderRadius: 10,
@@ -431,7 +361,6 @@ paywallImage: {
     borderColor: 'rgba(205, 195, 171, 0.15)',
     height: 100,
   },
-  
   paywallTitle: {
     fontSize: 24,
     fontWeight: 'bold',
@@ -560,4 +489,3 @@ paywallImage: {
   },
   
 });
-

@@ -589,7 +589,14 @@ const handleRelationshipOptionSubmit = async (option) => {
         sendMessage("Yükledim", "user");
   
         // Mesajların doğru şekilde gönderildiğini ve gösterildiğini kontrol edin
+        sendDelayedMessages([
         
+        ], () => {
+          console.log('All messages sent.');
+          setTimeout(() => {
+            navigation.replace('Falla');
+          }, 3000); // 3 saniye bekleme süresi eklendi
+        });
       }
     } catch (error) {
       console.error('Error uploading images:', error);
@@ -607,6 +614,8 @@ const handleRelationshipOptionSubmit = async (option) => {
       setLoading(false); // Yükleme işlemi bittiğinde animasyonu gizle
     }
   };
+  
+
   
   
 const today = new Date();

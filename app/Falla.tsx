@@ -20,6 +20,8 @@ export default function Falla() {
   const [modalVisible, setModalVisible] = useState(false);
   const router = useRouter();
   const navigation = useNavigation();
+  const intervalRef = useRef(null); // Zamanlayıcı referansı için
+  const navigationTriggered = useRef(false); // Tekrarlanan yönlendirmeleri önlemek için
 
   useLayoutEffect(() => {
     navigation.setOptions({
@@ -39,25 +41,26 @@ export default function Falla() {
       } catch (error) {
         console.error('Error getting or setting device ID', error);
       }
-    };
+    }; 
 
     getDeviceId();
   }, []);
 
   useEffect(() => {
-    const interval = setInterval(() => {
+    intervalRef.current = setInterval(() => {
       setTimer(prevTimer => {
         if (prevTimer <= 1) {
-          clearInterval(interval);
-          router.push({ pathname: '/Fal', params: { deviceId, initialMessages } }); // Süre bitince Fal ekranına yönlendir
+          clearInterval(intervalRef.current);
+          navigateToFalScreen(); // Yönlendirme işlemi
           return 0;
         }
         return prevTimer - 1;
       });
     }, 1000);
-
-    return () => clearInterval(interval); // Cleanup on unmount
-  }, [router, deviceId, initialMessages]);
+  
+    return () => clearInterval(intervalRef.current); // Cleanup on unmount
+  }, [deviceId, initialMessages]);
+  
 
   useEffect(() => {
     Animated.loop(
@@ -82,11 +85,33 @@ export default function Falla() {
     return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
   };
 
+  const navigateToFalScreen = () => {
+    if (!navigationTriggered.current) {
+      navigationTriggered.current = true;
+      router.push({ pathname: '/Fal', params: { deviceId, initialMessages } });
+    }
+  };
+  
+
   const handleSpeedUpPress = () => {
     Alert.alert('Reklam İzle', 'Örnek bir reklam izliyorsunuz...', [
-      { text: 'Tamam', onPress: () => setTimer(10) }
+      { text: 'Tamam', onPress: () => {
+        clearInterval(intervalRef.current); // Mevcut zamanlayıcıyı durdur
+        setTimer(10); // Zamanlayıcıyı 10 saniyeye ayarla
+        intervalRef.current = setInterval(() => {
+          setTimer(prevTimer => {
+            if (prevTimer <= 1) {
+              clearInterval(intervalRef.current);
+              navigateToFalScreen(); // Yönlendirme işlemi
+              return 0;
+            }
+            return prevTimer - 1;
+          });
+        }, 1000);
+      }}
     ]);
   };
+  
 
   const handleLokumlaPress = () => {
     setModalVisible(true);
@@ -94,8 +119,10 @@ export default function Falla() {
 
   const handleModalPress = () => {
     setModalVisible(false);
-    router.push({ pathname: '/Fal', params: { deviceId, initialMessages } }); // Initial messages'ı da gönder
+    clearInterval(intervalRef.current); // Mevcut zamanlayıcıyı durdur
+    navigateToFalScreen(); // Yönlendirme işlemi
   };
+  
 
   return (
     <ImageBackground source={require('../assets/images/background.png')} style={styles.background}>
@@ -151,6 +178,7 @@ export default function Falla() {
     </ImageBackground>
   );
 }
+
 
 const styles = StyleSheet.create({
   background: {

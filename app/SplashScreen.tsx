@@ -20,11 +20,10 @@ export default function SplashScreen({ onAnimationEnd }) {
       setTimeout(() => {
         sound.unloadAsync();
         onAnimationEnd();
-      }, 7000); // Ses dosyasının uzunluğuna göre süreyi ayarlayın
+      }, 4000); // Ses dosyasının uzunluğuna göre süreyi ayarlayın
     }
 
     playSound();
-
 
     // İlk yazı animasyonu
     Animated.timing(textOpacity, {
@@ -43,6 +42,7 @@ export default function SplashScreen({ onAnimationEnd }) {
       }
     };
   }, [textOpacity, onAnimationEnd]);
+
 
   return (
     <ImageBackground source={require('../assets/images/background.png')} style={styles.background}>
